@@ -6,7 +6,7 @@ import _ from 'lodash';
 import express from 'express';
 import namespacedRequest from 'namespaced-request';
 
-import Router from './router';
+import Router from './index';
 
 describe('require opt-in middleware with no endpoints explicitly allowing', function () {
   withRunningServer(function () {
