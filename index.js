@@ -2,6 +2,7 @@ import BaseRouter from 'router';
 import Promise from 'bluebird';
 import _ from 'lodash';
 import pathToRegexp from 'path-to-regexp';
+import http from 'http';
 
 export default class Router extends BaseRouter {
   constructor (...args) {
@@ -28,6 +29,26 @@ export default class Router extends BaseRouter {
     return innerRouter;
   }
 
+  secureGet (params) {
+    let resolvers = params.resolve;
+    if (_.isNil(resolvers)) resolvers = [];
+    if (_.isFunction(resolvers)) resolvers = [resolvers];
+
+    let middleware = params.middleware;
+    if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureGet');
+    if (_.isFunction(middleware)) middleware = [middleware];
+
+    this.pathDefinitions.push(createPathDefinition({
+      path: params.path,
+      resolvers,
+      methods: ['GET'],
+    }));
+
+    /* actually mount the route */
+    this['get'](params.path, ...middleware);
+    return this;
+  }
+
   use (path, ...innerRouters) {
     if (_.isString(path)) {
       let {pathDefinition} = this.getPathDefinitionMatching(path);
@@ -49,7 +70,7 @@ export default class Router extends BaseRouter {
    */
   resolveCustomSecurity (req, urlSegment) {
     return Promise.try(() => {
-      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment);
+      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
       if (!pathDefinition) return Promise.resolve();
 
       urlSegment = urlSegment.substr(matchedUrlSegment.length);
@@ -80,11 +101,12 @@ export default class Router extends BaseRouter {
     });
   }
 
-  getPathDefinitionMatching (urlSegment) {
-    let matches;
+  getPathDefinitionMatching (urlSegment, method) {
+    let matches, hasMethod;
     for (const pathDefinition of this.pathDefinitions) {
       matches = pathDefinition.regexp.exec(urlSegment);
-      if (_.isArray(matches) && matches.length > 0) {
+      hasMethod = _.isNil(method) || _.includes(pathDefinition.methods, method);
+      if (_.isArray(matches) && matches.length > 0 && hasMethod) {
         return {pathDefinition, matchedUrlSegment: matches[0]};
       }
     }
@@ -97,5 +119,6 @@ function createPathDefinition (definition) {
     regexp: pathToRegexp(definition.path, {end: false, sensitive: true, strict: false}),
     innerRouters: [],
     resolvers: [],
+    methods: http.METHODS,
   });
 }
