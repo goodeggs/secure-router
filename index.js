@@ -29,23 +29,26 @@ export default class Router extends BaseRouter {
     return innerRouter;
   }
 
-  secureGet (params) {
+  secureEndpoint (params) {
+    if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
+    if (_.isNil(params.method)) throw new Error('Must pass a method to secureEndpoint');
+
     let resolvers = params.resolve;
     if (_.isNil(resolvers)) resolvers = [];
     if (_.isFunction(resolvers)) resolvers = [resolvers];
 
     let middleware = params.middleware;
-    if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureGet');
+    if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureEndpoint');
     if (_.isFunction(middleware)) middleware = [middleware];
 
     this.pathDefinitions.push(createPathDefinition({
       path: params.path,
       resolvers,
-      methods: ['GET'],
+      methods: [params.method],
     }));
 
     /* actually mount the route */
-    this['get'](params.path, ...middleware);
+    this[params.method.toLowerCase()](params.path, ...middleware);
     return this;
   }
 

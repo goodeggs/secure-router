@@ -41,7 +41,8 @@ describe('require opt-in middleware with a leaf endpoint explicitly allowing', f
     const router = new Router();
     router.use(router.getRequireOptInMiddleware());
 
-    router.secureGet({
+    router.secureEndpoint({
+      method: 'GET',
       path: '/foo',
       resolve: _.constant('ALLOW'),
       middleware (req, res) {
