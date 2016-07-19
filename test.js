@@ -77,6 +77,47 @@ describe('require opt-in middleware with a leaf endpoint explicitly allowing', f
   });
 });
 
+describe('require opt-in middleware with a POST leaf endpoint explicitly allowing', function () {
+  withRunningServer(function () {
+    const router = new Router();
+    router.use(router.getRequireOptInMiddleware());
+
+    router.secureEndpoint({
+      method: 'POST',
+      path: '/foo',
+      resolve: _.constant('ALLOW'),
+      middleware (req, res) {
+        res.send('you should be allowed here');
+      },
+    });
+
+    const app = express();
+    app.use(router);
+    return app;
+  });
+
+  it('enables POST requests for that path', function () {
+    return this.request.postPromised('/foo', {json: 'blah'})
+    .then(function (response) {
+      expect(response.statusCode).to.equal(200);
+    });
+  });
+
+  it('disables non-POST requests for that path', function () {
+    return this.request.getPromised('/foo')
+    .then(function (response) {
+      expect(response.statusCode).to.equal(405);
+    });
+  });
+
+  it('disables other requests', function () {
+    return this.request.getPromised('/bar')
+    .then(function (response) {
+      expect(response.statusCode).to.equal(405);
+    });
+  });
+});
+
 describe('require opt-in middleware with a subpath explicitly allowing', function () {
   withRunningServer(function () {
     const router = new Router();

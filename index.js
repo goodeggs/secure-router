@@ -24,7 +24,11 @@ export default class Router extends BaseRouter {
 
   withSecurity (path, ...resolvers) {
     const innerRouter = new Router();
-    this.pathDefinitions.push(createPathDefinition({path, innerRouters: [innerRouter], resolvers}));
+    this.pathDefinitions.push(createPathDefinition({
+      path,
+      innerRouters: [innerRouter],
+      resolvers,
+    }));
     this.use(path, innerRouter);
     return innerRouter;
   }
