@@ -44,7 +44,7 @@ export default class Router extends BaseRouter {
     this.pathDefinitions.push(createPathDefinition({
       path: params.path,
       resolvers,
-      methods: [params.method],
+      methods: [params.method.toUpperCase()],
     }));
 
     /* actually mount the route */
