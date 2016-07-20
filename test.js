@@ -14,12 +14,12 @@ describe('default behavior', function () {
     const router = buildRouter();
     router.get('/foo', (req, res) => res.send('you should never get here!'));
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('denies requests to undefined endpoints', function () {
     return withRunningServer(buildRouter())
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 });
 
@@ -34,8 +34,8 @@ describe('specific endpoints', function () {
     });
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toReturnCode(200))
-    .then(() => expectRequest('POST', '/foo').toReturnCode(405))
-    .then(() => expectRequest('GET', '/bar').toReturnCode(405));
+    .then(() => expectRequest('POST', '/foo').toReturnCode(401))
+    .then(() => expectRequest('GET', '/bar').toReturnCode(401));
   });
 
   it('allows POST access to specific secure endpoints', function () {
@@ -48,8 +48,8 @@ describe('specific endpoints', function () {
     });
     return withRunningServer(router)
     .then(() => expectRequest('POST', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
-    .then(() => expectRequest('POST', '/bar').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+    .then(() => expectRequest('POST', '/bar').toReturnCode(401));
   });
 
   it('allows PUT access to specific secure endpoints', function () {
@@ -62,8 +62,8 @@ describe('specific endpoints', function () {
     });
     return withRunningServer(router)
     .then(() => expectRequest('PUT', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
-    .then(() => expectRequest('PUT', '/bar').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+    .then(() => expectRequest('PUT', '/bar').toReturnCode(401));
   });
 
   it('allows DELETE access to specific secure endpoints', function () {
@@ -76,8 +76,8 @@ describe('specific endpoints', function () {
     });
     return withRunningServer(router)
     .then(() => expectRequest('DELETE', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
-    .then(() => expectRequest('DELETE', '/bar').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+    .then(() => expectRequest('DELETE', '/bar').toReturnCode(401));
   });
 
   it('allows HEAD access to specific secure endpoints', function () {
@@ -90,8 +90,8 @@ describe('specific endpoints', function () {
     });
     return withRunningServer(router)
     .then(() => expectRequest('HEAD', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
-    .then(() => expectRequest('HEAD', '/bar').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+    .then(() => expectRequest('HEAD', '/bar').toReturnCode(401));
   });
 });
 
@@ -103,7 +103,7 @@ describe('sub-routers', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/foo').toReturnCode(200))
     .then(() => expectRequest('GET', '/sub/bar').toReturnCode(404))
-    .then(() => expectRequest('GET', '/bar').toReturnCode(405));
+    .then(() => expectRequest('GET', '/bar').toReturnCode(401));
   });
 
   it('allows access to sub-sub-resources when the security is defined at the upper layer', function () {
@@ -125,7 +125,7 @@ describe('sub-routers', function () {
     router.use('/sub', subRouter);
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(405));
+    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
   });
 });
 
@@ -139,7 +139,7 @@ describe('allowing and denying', function () {
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('does not allow access to a resource if some security middleware allows and one denies', function () {
@@ -151,7 +151,7 @@ describe('allowing and denying', function () {
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('does allow access to a resource if one security middleware allows and none denies', function () {

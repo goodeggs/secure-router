@@ -17,7 +17,7 @@ export default class Router extends BaseRouter {
       router.resolveCustomSecurity(req, req.url)
       .then(function (result) {
         if (result === 'ALLOW') return next();
-        return res.sendStatus(405);
+        return res.sendStatus(401);
       });
     };
   }
