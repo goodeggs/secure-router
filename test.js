@@ -3,293 +3,218 @@ import 'goodeggs-ops-api-test-helpers/server';
 
 import Promise from 'bluebird';
 import _ from 'lodash';
+import assert from 'assert';
 import express from 'express';
-import namespacedRequest from 'namespaced-request';
+import request from 'request';
 
 import Router from './index';
 
-describe('require opt-in middleware with no endpoints explicitly allowing', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-    router.get('/foo', function (req, res) {
-      res.send('you should never get here!');
-    });
-
-    const app = express();
-    app.use(router);
-    return app;
+describe('default behavior', function () {
+  it('denies requests to endpoints with no security middleware', function () {
+    const router = buildRouter();
+    router.get('/foo', (req, res) => res.send('you should never get here!'));
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
   });
 
-  it('disables a request to the specifed endpoint', function () {
-    return this.request.getPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
+  it('denies requests to undefined endpoints', function () {
+    return withRunningServer(buildRouter())
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
   });
 });
 
-describe('require opt-in middleware with a leaf endpoint explicitly allowing', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
+describe('specific endpoints', function () {
+  it('allows GET access to specific secure endpoints', function () {
+    const router = buildRouter();
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
       resolve: _.constant('ALLOW'),
-      middleware (req, res) {
-        res.send('you should be allowed here');
-      },
+      middleware: (req, res) => res.sendStatus(200),
     });
-
-    const app = express();
-    app.use(router);
-    return app;
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(200))
+    .then(() => expectRequest('POST', '/foo').toReturnCode(405))
+    .then(() => expectRequest('GET', '/bar').toReturnCode(405));
   });
 
-  it('enables GET requests for that path', function () {
-    return this.request.getPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(200);
-    });
-  });
-
-  it('disables non-GET requests for that path', function () {
-    return this.request.postPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-});
-
-describe('require opt-in middleware with a POST leaf endpoint explicitly allowing', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
+  it('allows POST access to specific secure endpoints', function () {
+    const router = buildRouter();
     router.secureEndpoint({
       method: 'POST',
       path: '/foo',
       resolve: _.constant('ALLOW'),
-      middleware (req, res) {
-        res.send('you should be allowed here');
-      },
+      middleware: (req, res) => res.sendStatus(200),
     });
-
-    const app = express();
-    app.use(router);
-    return app;
+    return withRunningServer(router)
+    .then(() => expectRequest('POST', '/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
+    .then(() => expectRequest('POST', '/bar').toReturnCode(405));
   });
 
-  it('enables POST requests for that path', function () {
-    return this.request.postPromised('/foo', {json: 'blah'})
-    .then(function (response) {
-      expect(response.statusCode).to.equal(200);
+  it('allows PUT access to specific secure endpoints', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'PUT',
+      path: '/foo',
+      resolve: _.constant('ALLOW'),
+      middleware: (req, res) => res.sendStatus(200),
     });
+    return withRunningServer(router)
+    .then(() => expectRequest('PUT', '/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
+    .then(() => expectRequest('PUT', '/bar').toReturnCode(405));
   });
 
-  it('disables non-POST requests for that path', function () {
-    return this.request.getPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
+  it('allows DELETE access to specific secure endpoints', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'DELETE',
+      path: '/foo',
+      resolve: _.constant('ALLOW'),
+      middleware: (req, res) => res.sendStatus(200),
     });
+    return withRunningServer(router)
+    .then(() => expectRequest('DELETE', '/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
+    .then(() => expectRequest('DELETE', '/bar').toReturnCode(405));
   });
 
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
+  it('allows HEAD access to specific secure endpoints', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'HEAD',
+      path: '/foo',
+      resolve: _.constant('ALLOW'),
+      middleware: (req, res) => res.sendStatus(200),
     });
+    return withRunningServer(router)
+    .then(() => expectRequest('HEAD', '/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405))
+    .then(() => expectRequest('HEAD', '/bar').toReturnCode(405));
   });
 });
 
-describe('require opt-in middleware with a subpath explicitly allowing', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
-    router.withSecurity('/foo', _.constant('ALLOW'))
-    .get('/', function (req, res) {
-      res.send('you should be allowed here');
-    });
-
-    const app = express();
-    app.use(router);
-    return app;
+describe('sub-routers', function () {
+  it('allows access to sub-resources', function () {
+    const router = buildRouter();
+    router.withSecurity('/sub', _.constant('ALLOW'))
+    .get('/foo', (req, res) => res.sendStatus(200));
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/sub/bar').toReturnCode(404))
+    .then(() => expectRequest('GET', '/bar').toReturnCode(405));
   });
 
-  it('enables requests inside that path', function () {
-    return this.request.getPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(200);
-    });
+  it('allows access to sub-sub-resources when the security is defined at the upper layer', function () {
+    const router = buildRouter();
+    const subSubRouter = new Router();
+    subSubRouter.get('/foo', (req, res) => res.sendStatus(200));
+    router.withSecurity('/sub', _.constant('ALLOW'))
+    .use('/subsub', subSubRouter);
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(404));
   });
 
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-});
-
-describe('require opt-in middleware with an endpoint explicitly allowing and another explicitly denying', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
-    router.withSecurity('/foo', _.constant('ALLOW'), _.constant('DENY'))
-    .get('/', function (req, res) {
-      res.send('go away!');
-    });
-
-    const app = express();
-    app.use(router);
-    return app;
-  });
-
-  it('disables this specific request', function () {
-    return this.request.getPromised('/foo')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
+  it('allows access to sub-sub-resources when the security is defined at the lower layer', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.withSecurity('/subsub', _.constant('ALLOW'))
+    .get('/foo', (req, res) => res.sendStatus(200));
+    router.use('/sub', subRouter);
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
+    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(405));
   });
 });
 
-describe('an embedded router that explicitly allows', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
-    const embeddedRouter = new Router();
-    embeddedRouter.withSecurity('/bar', _.constant('ALLOW'))
-    .get('/', function (req, res) {
-      res.send('go away!');
+describe('allowing and denying', function () {
+  it('does not allow access to a resource if no security middleware explicitly allows', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      resolve: [_.constant(), _.constant()],
+      middleware: (req, res) => res.sendStatus(200),
     });
-
-    router.use('/foo', embeddedRouter);
-
-    const app = express();
-    app.use(router);
-    return app;
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
   });
 
-  it('allows this specific request', function () {
-    return this.request.getPromised('/foo/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(200);
+  it('does not allow access to a resource if some security middleware allows and one denies', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      resolve: [_.constant('ALLOW'), _.constant('DENY')],
+      middleware: (req, res) => res.sendStatus(200),
     });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(405));
   });
 
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
+  it('does allow access to a resource if one security middleware allows and none denies', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      resolve: [_.constant('ALLOW'), _.constant()],
+      middleware: (req, res) => res.sendStatus(200),
     });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 });
 
-describe('an embedded router that explicitly allows, but the outer router explicitly denies', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
-    const embeddedRouter = new Router();
-    embeddedRouter.withSecurity('/bar', _.constant('ALLOW'))
-    .get('/', function (req, res) {
-      res.send('go away!');
-    });
-
-    router.withSecurity('/foo', _.constant('DENY'))
-    .use('/foo', embeddedRouter);
-
-    const app = express();
-    app.use(router);
-    return app;
-  });
-
-  it('allows this specific request', function () {
-    return this.request.getPromised('/foo/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
-
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
+describe('authentication', function () {
+  it('does not allow access to a resource if the middleware does not authenticate');
+  it('does not allow access to a resource if the middleware authenticates but does not authorize');
+  it('logs an error if authentication middleware attempts to ALLOW');
 });
 
-describe('an embedded router with a parameterized route that explicitly allows', function () {
-  withRunningServer(function () {
-    const router = new Router();
-    router.use(router.getRequireOptInMiddleware());
-
-    const embeddedRouter = new Router();
-    embeddedRouter.withSecurity('/info', _.constant('ALLOW'))
-    .get('/', function (req, res) {
-      res.send('user information');
-    });
-    router.use('/user/:id', embeddedRouter);
-
-    const app = express();
-    app.use(router);
-    return app;
-  });
-
-  it('allows requests with variable-length ids', function () {
-    return this.request.getPromised('/user/19839280981/info')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(200);
-    });
-  });
-
-  it('disables other requests', function () {
-    return this.request.getPromised('/bar')
-    .then(function (response) {
-      expect(response.statusCode).to.equal(405);
-    });
-  });
+describe('authorization', function () {
+  it('does not allow access to a resource if the middleware does not authorize');
+  it('does not allow access to a resource if the middleware authorizes but does not authenticate');
+  it('allows access to a resource if the middleware authenticates and authorizes');
 });
 
-function withRunningServer (appCreator) {
-  beforeEach('start server', function (done) {
-    if (_.isNil(this.port)) this.port = 19288;
-    this.app = appCreator();
+function expectRequest (method, path) {
+  return {
+    toReturnCode (responseCode) {
+      return Promise.fromCallback(function (cb) {
+        request({
+          method,
+          url: `http://localhost:19288${path}`,
+        }, cb);
+      })
+      .then(function (response) {
+        assert.equal(response.statusCode, responseCode, `Expected request to ${path} to return code ${responseCode} but got ${response.statusCode}.`);
+      });
+    },
+  };
+}
 
-    this.request = namespacedRequest(`http://localhost:${this.port}`);
-    Promise.promisifyAll(this.request, {suffix: 'Promised'});
+function buildRouter () {
+  const router = new Router();
+  router.use(router.getRequireOptInMiddleware());
+  return router;
+}
 
-    this.server = this.app.listen(this.port, done);
-  });
-
-  afterEach('stop server', function (done) {
-    if (this.server) return this.server.close(done);
-    return process.nextTick(done);
+let sharedServer;
+function withRunningServer (router) {
+  const app = express();
+  app.use(router);
+  return Promise.fromCallback(function (done) {
+    sharedServer = app.listen(19288, done);
   });
 }
+afterEach('stop server', function (done) {
+  if (sharedServer) {
+    return sharedServer.close(function () {
+      sharedServer = null;
+      done();
+    });
+  }
+  return process.nextTick(done);
+});
