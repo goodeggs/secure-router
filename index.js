@@ -11,15 +11,16 @@ export default class Router extends BaseRouter {
     this.innerRouters = [];
   }
 
-  getRequireOptInMiddleware () {
+  bounceRequests () {
     const router = this;
-    return function (req, res, next) {
+    router.use(function (req, res, next) {
       router.resolveCustomSecurity(req, req.url)
       .then(function (result) {
         if (result === 'ALLOW') return next();
         return res.sendStatus(401);
       });
-    };
+    });
+    return router;
   }
 
   secureSubpath (params) {

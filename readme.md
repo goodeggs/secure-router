@@ -16,7 +16,7 @@ import SecureRouter from 'secure-router';
 
 const app = express();
 const router = new SecureRouter();
-router.use(router.getRequireOptInMiddleware());
+router.bounceRequests();
 app.use(router);
 
 router.secureEndpoint({

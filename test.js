@@ -206,7 +206,7 @@ function expectRequest (method, path) {
 
 function buildRouter () {
   const router = new Router();
-  router.use(router.getRequireOptInMiddleware());
+  router.bounceRequests();
   return router;
 }
 
