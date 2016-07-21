@@ -51,9 +51,21 @@ secretRouter.get('/mission-briefs', (req, res) => res.send(nextMission));
 
 ## The rules:
 
-Anything can explicitly `DENY` access to a route.
+You can define an arbitrary number of `bouncers` on routes, paths, or entire
+routers.
 
-Something has to explicitly `ALLOW` access to a route. If nothing is `ALLOW`ed, request is implicitly `DENY`ed access.
+Any bouncer can explicitly `DENY`, `AUTHENTICATE`, or `AUTHORIZE` a request for
+a path for which that bouncer has been defined. This can be done asynchronously,
+using a promise.
+
+If any bouncer has elected to `DENY`, the request immediately short-circuits
+with a `401` status.
+
+If no bouncer has elected to `AUTHENTICATE`, the request immediately
+short-circuits with a `401` status.
+
+If no bouncer has elected to `AUTHORIZE`, the request immediately
+short-circuits with a `403` status.
 
 ## Contributing
 

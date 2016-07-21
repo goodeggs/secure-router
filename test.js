@@ -23,7 +23,7 @@ describe('default behavior', function () {
   });
 });
 
-describe('specific endpoints', function () {
+describe('secureEndpoint', function () {
   it('allows GET access to specific secure endpoints', function () {
     const router = buildRouter();
     router.secureEndpoint({
@@ -110,7 +110,7 @@ describe('specific endpoints', function () {
   });
 });
 
-describe('sub-routers', function () {
+describe('secureSubpath', function () {
   it('allows access to sub-resources', function () {
     const router = buildRouter();
     router.secureSubpath({
@@ -159,6 +159,17 @@ describe('sub-routers', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
     .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
+  });
+});
+
+describe('bouncer', function () {
+  it('allows you to arbitrarily add bouncers to routers', function () {
+    const router = buildRouter();
+    router.bouncer(_.constant('AUTHENTICATE'));
+    router.bouncer(_.constant('AUTHORIZE'));
+    router.get('/foo', (req, res) => res.sendStatus(200));
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 });
 

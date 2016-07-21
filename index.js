@@ -7,6 +7,7 @@ import http from 'http';
 export default class Router extends BaseRouter {
   constructor (...args) {
     super(...args);
+    this.bouncers = [];
     this.pathDefinitions = [];
     this.innerRouters = [];
   }
@@ -85,27 +86,31 @@ export default class Router extends BaseRouter {
     BaseRouter.prototype.use.apply(this, arguments);
   }
 
-  /* returns a promise. runs all of the appropriate middlewares configured for this route.
-   *
-   * if any return "DENY", then return the first "DENY".
-   * if none return "DENY" and one returns "ALLOW", return "ALLOW".
-   * otherwise return undefined.
-   */
+  bouncer (bouncer) {
+    this.bouncers.push(bouncer);
+  }
+
+  /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
   resolveCustomSecurity (req, urlSegment) {
     return Promise.try(() => {
-      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
-      if (!pathDefinition) return Promise.resolve([]);
-
-      urlSegment = urlSegment.substr(matchedUrlSegment.length);
       const bouncerResults = [];
+      const bouncers = [...this.bouncers];
+      const innerRouters = [];
+
+      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
+      if (_.isObject(pathDefinition)) {
+        urlSegment = urlSegment.substr(matchedUrlSegment.length);
+        bouncers.push(...pathDefinition.bouncers);
+        innerRouters.push(...pathDefinition.innerRouters);
+      }
 
       return Promise.all([
-        Promise.map(pathDefinition.bouncers, function (bouncer) {
+        Promise.map(bouncers, function (bouncer) {
           return Promise.resolve(bouncer(req))
           .then((result) => bouncerResults.push(result));
         }),
 
-        Promise.map(pathDefinition.innerRouters, function (innerRouter) {
+        Promise.map(innerRouters, function (innerRouter) {
           return innerRouter.resolveCustomSecurity(req, urlSegment)
           .then((results) => bouncerResults.push(...results));
         }),
@@ -123,7 +128,7 @@ export default class Router extends BaseRouter {
         return {pathDefinition, matchedUrlSegment: matches[0]};
       }
     }
-    return {pathDefinition: null};
+    return {pathDefinition: null, matchedUrlSegment: ''};
   }
 }
 
