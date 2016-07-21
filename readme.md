@@ -49,7 +49,7 @@ secretRouter.get('/mission-briefs', (req, res) => res.send(nextMission));
 [rfc403]: https://httpstatuses.com/403
 [express]: https://expressjs.com/
 
-## The rules:
+## Bouncers
 
 You can define an arbitrary number of `bouncers` on routes, paths, or entire
 routers.
@@ -66,6 +66,76 @@ short-circuits with a `401` status.
 
 If no bouncer has elected to `AUTHORIZE`, the request immediately
 short-circuits with a `403` status.
+
+### Bouncer functions
+
+All bouncers are individual functions, that accept a `req` argument (this is
+the same `req` that an express middleware receives), and return a promise.
+If the promise resolves to anything other than `DENY`, `AUTHENTICATE`, or
+`AUTHORIZE`, the bouncer is ignored.
+
+Example:
+
+```js
+const bouncer = function (req) {
+  getSecurityClearanceLevel(req.user.id)
+  .then(function (level) {
+    if (level === 'TOP SECRET') return 'AUTHORIZE';
+  });
+}
+```
+
+### Defining bouncers on individual endpoints
+
+Use the `secureEndpoint` method:
+
+```js
+router.secureEndpoint({
+  method: 'GET',
+  path: '/the-crown-jewels',
+  bouncers: [bouncer1, bouncer2],
+  middleware (req, res) {
+    req.send(theCrownJewels);
+  },
+});
+```
+
+- **`method`**: `GET`, `POST`, `PUT`, `DELETE`, etc...
+- **`path`**: appended to the path of the current router
+- **`bouncers`**: list of bouncers. Alternatively, use **`bouncer`** to pass
+  only one bouncer
+- **`bouncer`**: individual bouncer. Alternatively, use **`bouncers`** to pass
+  multiple bouncers
+- **`middleware`**: either an array of middleware or a function. Works the
+  same way as normal express middleware.
+
+### Defining bouncers on subpaths
+
+Use the `secureSubpath` method:
+
+```js
+let subpathRouter = router.secureSubpath({
+  path: '/secrets',
+  bouncers: [bouncer1, bouncer2],
+});
+```
+
+Returns a new instance of `SecureRouter`.
+
+- **`path`**: appended to the path of the current router
+- **`bouncers`**: list of bouncers. Alternatively, use **`bouncer`** to pass
+  only one bouncer
+- **`bouncer`**: individual bouncer. Alternatively, use **`bouncers`** to pass
+  multiple bouncers
+
+### Defining flat bouncers
+
+These bouncers apply to all routes used by the current router. Use the
+`bouncer` method:
+
+```
+router.bouncer(bouncer);
+```
 
 ## Contributing
 
