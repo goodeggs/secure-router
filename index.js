@@ -26,9 +26,9 @@ export default class Router extends BaseRouter {
   secureSubpath (params) {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
 
-    let bouncers = params.bouncer;
+    let bouncers = params.bouncers;
     if (_.isNil(bouncers)) bouncers = [];
-    if (_.isFunction(bouncers)) bouncers = [bouncers];
+    if (_.isFunction(params.bouncer)) bouncers.push(params.bouncer);
 
     const innerRouter = new Router();
     this.pathDefinitions.push(createPathDefinition({
@@ -44,9 +44,9 @@ export default class Router extends BaseRouter {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
     if (_.isNil(params.method)) throw new Error('Must pass a method to secureEndpoint');
 
-    let bouncers = params.bouncer;
+    let bouncers = params.bouncers;
     if (_.isNil(bouncers)) bouncers = [];
-    if (_.isFunction(bouncers)) bouncers = [bouncers];
+    if (_.isFunction(params.bouncer)) bouncers.push(params.bouncer);
 
     let middleware = params.middleware;
     if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureEndpoint');

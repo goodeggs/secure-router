@@ -29,7 +29,9 @@ describe('specific endpoints', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -43,7 +45,9 @@ describe('specific endpoints', function () {
     router.secureEndpoint({
       method: 'POST',
       path: '/foo',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -57,7 +61,9 @@ describe('specific endpoints', function () {
     router.secureEndpoint({
       method: 'PUT',
       path: '/foo',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -71,7 +77,9 @@ describe('specific endpoints', function () {
     router.secureEndpoint({
       method: 'DELETE',
       path: '/foo',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -85,7 +93,9 @@ describe('specific endpoints', function () {
     router.secureEndpoint({
       method: 'HEAD',
       path: '/foo',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -100,7 +110,9 @@ describe('sub-routers', function () {
     const router = buildRouter();
     router.secureSubpath({
       path: '/sub',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
     return withRunningServer(router)
@@ -115,7 +127,9 @@ describe('sub-routers', function () {
     subSubRouter.get('/foo', (req, res) => res.sendStatus(200));
     router.secureSubpath({
       path: '/sub',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
     })
     .use('/subsub', subSubRouter);
     return withRunningServer(router)
@@ -128,7 +142,9 @@ describe('sub-routers', function () {
     const subRouter = new Router();
     subRouter.secureSubpath({
       path: '/subsub',
-      bouncer: _.constant('ALLOW'),
+      bouncers: [
+        _.constant('ALLOW'),
+      ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
     router.use('/sub', subRouter);
@@ -144,7 +160,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncer: [_.constant(), _.constant()],
+      bouncers: [
+        _.constant(),
+        _.constant(),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -156,7 +175,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncer: [_.constant('ALLOW'), _.constant('DENY')],
+      bouncers: [
+        _.constant('ALLOW'),
+        _.constant('DENY'),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
@@ -168,7 +190,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncer: [_.constant('ALLOW'), _.constant()],
+      bouncers: [
+        _.constant('ALLOW'),
+        _.constant(),
+      ],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
