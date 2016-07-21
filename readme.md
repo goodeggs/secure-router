@@ -1,5 +1,8 @@
 # Secure Router
 
+[![Build
+Status](https://travis-ci.org/goodeggs/secure-router.svg?branch=master)](https://travis-ci.org/goodeggs/secure-router)
+
 This node module implements a replacement for the `Router` that comes with
 [Express][express]. It provides a stricter security model, making your
 endpoints default to returning [`401 Unauthorized`][rfc401] or [`403
