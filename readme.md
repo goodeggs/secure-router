@@ -32,7 +32,13 @@ router.secureEndpoint({
 
 /* OR */
 
-mi6Router = router.withSecurity('/mi6', (req) => req.isJamesBond ? 'ALLOW' : null)
+mi6Router = router.secureSubpath({
+  path: '/mi6',
+  resolve (req) {
+    if (req.user.isJamesBond) return 'ALLOW';
+  }
+});
+
 mi6Router.get('/mission', (req, res) => res.send(nextMission));
 ```
 

@@ -98,7 +98,10 @@ describe('specific endpoints', function () {
 describe('sub-routers', function () {
   it('allows access to sub-resources', function () {
     const router = buildRouter();
-    router.withSecurity('/sub', _.constant('ALLOW'))
+    router.secureSubpath({
+      path: '/sub',
+      resolve: _.constant('ALLOW'),
+    })
     .get('/foo', (req, res) => res.sendStatus(200));
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/foo').toReturnCode(200))
@@ -110,7 +113,10 @@ describe('sub-routers', function () {
     const router = buildRouter();
     const subSubRouter = new Router();
     subSubRouter.get('/foo', (req, res) => res.sendStatus(200));
-    router.withSecurity('/sub', _.constant('ALLOW'))
+    router.secureSubpath({
+      path: '/sub',
+      resolve: _.constant('ALLOW'),
+    })
     .use('/subsub', subSubRouter);
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
@@ -120,7 +126,10 @@ describe('sub-routers', function () {
   it('allows access to sub-sub-resources when the security is defined at the lower layer', function () {
     const router = buildRouter();
     const subRouter = new Router();
-    subRouter.withSecurity('/subsub', _.constant('ALLOW'))
+    subRouter.secureSubpath({
+      path: '/subsub',
+      resolve: _.constant('ALLOW'),
+    })
     .get('/foo', (req, res) => res.sendStatus(200));
     router.use('/sub', subRouter);
     return withRunningServer(router)

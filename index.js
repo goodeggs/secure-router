@@ -22,14 +22,20 @@ export default class Router extends BaseRouter {
     };
   }
 
-  withSecurity (path, ...resolvers) {
+  secureSubpath (params) {
+    if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
+
+    let resolvers = params.resolve;
+    if (_.isNil(resolvers)) resolvers = [];
+    if (_.isFunction(resolvers)) resolvers = [resolvers];
+
     const innerRouter = new Router();
     this.pathDefinitions.push(createPathDefinition({
-      path,
+      path: params.path,
       innerRouters: [innerRouter],
       resolvers,
     }));
-    this.use(path, innerRouter);
+    this.use(params.path, innerRouter);
     return innerRouter;
   }
 
