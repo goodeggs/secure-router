@@ -5,7 +5,7 @@ import assert from 'assert';
 import express from 'express';
 import request from 'request';
 
-import Router from './index';
+import Router from './src/index';
 
 describe('default behavior', function () {
   it('denies requests to endpoints with no security middleware', function () {
