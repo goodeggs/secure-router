@@ -40,7 +40,6 @@
     "eslint-plugin-goodeggs": "^3.2.0",
     "eslint-plugin-lodash": "^1.9.4",
     "eslint-plugin-mocha": "^4.0.0",
-    "goodeggs-ops-api-test-helpers": "^9.2.2",
     "in-publish": "^2.0.0",
     "mocha": "^2.5.3",
     "namespaced-request": "^1.3.2",

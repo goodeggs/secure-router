@@ -1,6 +1,4 @@
 /* eslint-env goodeggs/server-side-test */
-import 'goodeggs-ops-api-test-helpers/server';
-
 import Promise from 'bluebird';
 import _ from 'lodash';
 import assert from 'assert';
