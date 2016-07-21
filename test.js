@@ -30,7 +30,8 @@ describe('specific endpoints', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -46,7 +47,8 @@ describe('specific endpoints', function () {
       method: 'POST',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -62,7 +64,8 @@ describe('specific endpoints', function () {
       method: 'PUT',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -78,7 +81,8 @@ describe('specific endpoints', function () {
       method: 'DELETE',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -94,7 +98,8 @@ describe('specific endpoints', function () {
       method: 'HEAD',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -111,7 +116,8 @@ describe('sub-routers', function () {
     router.secureSubpath({
       path: '/sub',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
@@ -128,7 +134,8 @@ describe('sub-routers', function () {
     router.secureSubpath({
       path: '/sub',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
     })
     .use('/subsub', subSubRouter);
@@ -143,7 +150,8 @@ describe('sub-routers', function () {
     subRouter.secureSubpath({
       path: '/subsub',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
       ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
@@ -170,13 +178,14 @@ describe('allowing and denying', function () {
     .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
-  it('does not allow access to a resource if some security middleware allows and one denies', function () {
+  it('does not allow access to a resource if some security middleware authenticates, some authorizes, and one denies', function () {
     const router = buildRouter();
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
         _.constant('DENY'),
       ],
       middleware: (req, res) => res.sendStatus(200),
@@ -185,13 +194,14 @@ describe('allowing and denying', function () {
     .then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
-  it('does allow access to a resource if one security middleware allows and none denies', function () {
+  it('does allow access to a resource if some security middleware authenticates, some authorizes, and none denies', function () {
     const router = buildRouter();
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('ALLOW'),
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
         _.constant(),
       ],
       middleware: (req, res) => res.sendStatus(200),
@@ -199,18 +209,36 @@ describe('allowing and denying', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
-});
 
-describe('authentication', function () {
-  it('does not allow access to a resource if the middleware does not authenticate');
-  it('does not allow access to a resource if the middleware authenticates but does not authorize');
-  it('logs an error if authentication middleware attempts to ALLOW');
-});
+  it('does not allow access to a resource if the middleware does not authenticate (even if it authorizes)', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      bouncers: [
+        _.constant(),
+        _.constant('AUTHORIZE'),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+  });
 
-describe('authorization', function () {
-  it('does not allow access to a resource if the middleware does not authorize');
-  it('does not allow access to a resource if the middleware authorizes but does not authenticate');
-  it('allows access to a resource if the middleware authenticates and authorizes');
+  it('does not allow access to a resource (returns a 403) if the middleware authenticates but does not authorize', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      bouncers: [
+        _.constant('AUTHENTICATE'),
+        _.constant(),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(403));
+  });
 });
 
 function expectRequest (method, path) {

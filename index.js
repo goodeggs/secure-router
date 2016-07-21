@@ -15,9 +15,18 @@ export default class Router extends BaseRouter {
     const router = this;
     router.use(function (req, res, next) {
       router.resolveCustomSecurity(req, req.url)
-      .then(function (result) {
-        if (result === 'ALLOW') return next();
-        return res.sendStatus(401);
+      .then(function (results) {
+        function someResultsMatch (test) {
+          return _.some(results, (result) => result === test);
+        }
+        function noResultsMatch (test) {
+          return _.every(results, (result) => result !== test);
+        }
+
+        if (someResultsMatch('DENY')) return res.sendStatus(401);
+        if (noResultsMatch('AUTHENTICATE')) return res.sendStatus(401);
+        if (noResultsMatch('AUTHORIZE')) return res.sendStatus(403);
+        return next();
       });
     });
     return router;
@@ -85,33 +94,23 @@ export default class Router extends BaseRouter {
   resolveCustomSecurity (req, urlSegment) {
     return Promise.try(() => {
       const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
-      if (!pathDefinition) return Promise.resolve();
+      if (!pathDefinition) return Promise.resolve([]);
 
       urlSegment = urlSegment.substr(matchedUrlSegment.length);
+      const bouncerResults = [];
 
-      return Promise.mapSeries(pathDefinition.bouncers, function (bouncer) {
-        return Promise.resolve(bouncer(req))
-        .then(function (result) {
-          if (result === 'DENY') throw new Error();
-          return result;
-        });
-      })
-      .then(function (resultsForCurrentPath) {
-        return Promise.mapSeries(pathDefinition.innerRouters, function (innerRouter) {
+      return Promise.all([
+        Promise.map(pathDefinition.bouncers, function (bouncer) {
+          return Promise.resolve(bouncer(req))
+          .then((result) => bouncerResults.push(result));
+        }),
+
+        Promise.map(pathDefinition.innerRouters, function (innerRouter) {
           return innerRouter.resolveCustomSecurity(req, urlSegment)
-          .then(function (result) {
-            if (result === 'DENY') throw new Error();
-            return result;
-          });
-        })
-        .then(function (resultsForInnerRouters) {
-          return resultsForCurrentPath.concat(resultsForInnerRouters);
-        });
-      })
-      .then(function (results) {
-        if (_.some(results, (result) => result === 'ALLOW')) return 'ALLOW';
-      })
-      .catch(_.constant('DENY'));
+          .then((results) => bouncerResults.push(...results));
+        }),
+      ])
+      .then(() => bouncerResults);
     });
   }
 

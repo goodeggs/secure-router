@@ -22,9 +22,10 @@ app.use(router);
 router.secureEndpoint({
   method: 'GET',
   path: '/the-crown-jewels',
-  bouncer (req) {
-    if (req.user.isRoyalty) return 'ALLOW';
-  },
+  bouncers: [
+    ((req) => if (req.user) return 'AUTHENTICATE'),
+    ((req) => if (req.user.isRoyalty) return 'AUTHORIZE'),
+  ],
   middleware (req, res) {
     req.send(theCrownJewels)
   },
@@ -32,18 +33,20 @@ router.secureEndpoint({
 
 /* OR */
 
-mi6Router = router.secureSubpath({
-  path: '/mi6',
-  bouncer (req) {
-    if (req.user.isJamesBond) return 'ALLOW';
-  }
+secretRouter = router.secureSubpath({
+  path: '/secrets',
+  bouncers: [
+    ((req) => if (req.user) return 'AUTHENTICATE'),
+    ((req) => if (req.user.classification === 'MI6') return 'AUTHORIZE'),
+    ((req) => if (req.user.number === '006') return 'DENY'),
+  ],
 });
 
-mi6Router.get('/mission', (req, res) => res.send(nextMission));
+secretRouter.get('/mission-briefs', (req, res) => res.send(nextMission));
 ```
 
 [rfc401]: https://httpstatuses.com/401
-[rfc403]: https://httpstatuses.com/403 
+[rfc403]: https://httpstatuses.com/403
 [express]: https://expressjs.com/
 
 ## The rules:
