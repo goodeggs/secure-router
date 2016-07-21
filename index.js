@@ -34,7 +34,7 @@ export default class Router extends BaseRouter {
   }
 
   secureSubpath (params) {
-    if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
+    if (_.isNil(params.path)) throw new Error('Must pass a path to secureSubpath');
 
     let bouncers = params.bouncers;
     if (_.isNil(bouncers)) bouncers = [];
