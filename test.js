@@ -269,17 +269,53 @@ describe('allowing and denying', function () {
   });
 });
 
+describe('bouncer arguments', function () {
+  it('provides req object as the first argument to the bouncer function', function () {
+    const router = buildRouter();
+    let url;
+    router.bouncer(function (req) {
+      url = req.url;
+      return 'AUTHENTICATE';
+    });
+    router.bouncer(_.constant('AUTHORIZE'));
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(404))
+    .then(function () {
+      assert(url.match(/\/foo/));
+    });
+  });
+
+  it('provides res object as the second argument to the bouncer function', function () {
+    const router = buildRouter();
+    router.bouncer(function (req, res) {
+      res.set('x-foo', 'bar');
+      return 'AUTHENTICATE';
+    });
+    router.bouncer(_.constant('AUTHORIZE'));
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toHaveHeader('x-foo', 'bar'));
+  });
+});
+
 function expectRequest (method, path) {
+  const reqPromise = Promise.fromCallback(function (cb) {
+    request({
+      method,
+      url: `http://localhost:19288${path}`,
+    }, cb);
+  });
+
   return {
     toReturnCode (responseCode) {
-      return Promise.fromCallback(function (cb) {
-        request({
-          method,
-          url: `http://localhost:19288${path}`,
-        }, cb);
-      })
+      return reqPromise
       .then(function (response) {
         assert.equal(response.statusCode, responseCode, `Expected request to ${path} to return code ${responseCode} but got ${response.statusCode}.`);
+      });
+    },
+    toHaveHeader (name, value) {
+      return reqPromise
+      .then(function (response) {
+        assert.equal(response.headers[name], value, `Expected request to ${path} to have header ${name} of value ${value}, but got ${response.headers[name]} instead.`);
       });
     },
   };

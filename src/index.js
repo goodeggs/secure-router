@@ -14,7 +14,7 @@ export default class Router extends BaseRouter {
   bounceRequests () {
     const router = this;
     router.use(function (req, res, next) {
-      router.resolveCustomSecurity(req, req.url)
+      router.resolveCustomSecurity(req, res, req.url)
       .then(function (results) {
         function someResultsMatch (test) {
           return _.some(results, (result) => result === test);
@@ -100,7 +100,7 @@ export default class Router extends BaseRouter {
   }
 
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
-  resolveCustomSecurity (req, urlSegment) {
+  resolveCustomSecurity (req, res, urlSegment) {
     return Promise.try(() => {
       const bouncerResults = [];
       const bouncers = [...this.bouncers];
@@ -115,12 +115,12 @@ export default class Router extends BaseRouter {
 
       return Promise.all([
         Promise.map(bouncers, function (bouncer) {
-          return Promise.resolve(bouncer(req))
+          return Promise.resolve(bouncer(req, res))
           .then((result) => bouncerResults.push(result));
         }),
 
         Promise.map(innerRouters, function (innerRouter) {
-          return innerRouter.resolveCustomSecurity(req, urlSegment)
+          return innerRouter.resolveCustomSecurity(req, res, urlSegment)
           .then((results) => bouncerResults.push(...results));
         }),
       ])

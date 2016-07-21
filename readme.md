@@ -72,15 +72,15 @@ short-circuits with a `403` status.
 
 ### Bouncer functions
 
-All bouncers are individual functions, that accept a `req` argument (this is
-the same `req` that an express middleware receives), and return a promise.
-If the promise resolves to anything other than `DENY`, `AUTHENTICATE`, or
-`AUTHORIZE`, the bouncer is ignored.
+All bouncers are individual functions, that accept a `req` and a `res` argument
+(this is the same `req` that an express middleware receives), and return a
+promise.  If the promise resolves to anything other than `DENY`,
+`AUTHENTICATE`, or `AUTHORIZE`, the bouncer is ignored.
 
 Example:
 
 ```js
-const bouncer = function (req) {
+const bouncer = function (req, res) {
   getSecurityClearanceLevel(req.user.id)
   .then(function (level) {
     if (level === 'TOP SECRET') return 'AUTHORIZE';
