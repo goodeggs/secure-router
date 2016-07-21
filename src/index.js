@@ -9,7 +9,6 @@ export default class Router extends BaseRouter {
     super(...args);
     this.bouncers = [];
     this.pathDefinitions = [];
-    this.innerRouters = [];
   }
 
   bounceRequests () {
@@ -74,14 +73,24 @@ export default class Router extends BaseRouter {
   }
 
   use (path, ...innerRouters) {
+    function isSecureRouter (router) {
+      return _.isFunction(router.resolveCustomSecurity);
+    }
+
     if (_.isString(path)) {
       let {pathDefinition} = this.getPathDefinitionMatching(path);
       if (_.isNil(pathDefinition)) {
         pathDefinition = createPathDefinition({path});
         this.pathDefinitions.push(pathDefinition);
       }
-      innerRouters = innerRouters.filter((router) => _.isFunction(router.resolveCustomSecurity));
+      innerRouters = innerRouters.filter(isSecureRouter);
       pathDefinition.innerRouters.push(...innerRouters);
+    } else {
+      innerRouters = [path, ...innerRouters].filter(isSecureRouter);
+      for (const innerRouter of innerRouters) {
+        this.bouncers.push(...innerRouter.bouncers);
+        this.pathDefinitions.push(...innerRouter.pathDefinitions);
+      }
     }
     BaseRouter.prototype.use.apply(this, arguments);
   }

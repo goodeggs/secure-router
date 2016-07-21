@@ -21,7 +21,26 @@ describe('default behavior', function () {
   });
 });
 
-describe('secureEndpoint', function () {
+describe('use()', function () {
+  it('allows nesting of secure routers with use()', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      bouncers: [
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+    router.use(subRouter);
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
+  });
+});
+
+describe('secureEndpoint()', function () {
   it('allows GET access to specific secure endpoints', function () {
     const router = buildRouter();
     router.secureEndpoint({
@@ -108,7 +127,7 @@ describe('secureEndpoint', function () {
   });
 });
 
-describe('secureSubpath', function () {
+describe('secureSubpath()', function () {
   it('allows access to sub-resources', function () {
     const router = buildRouter();
     router.secureSubpath({
@@ -160,7 +179,7 @@ describe('secureSubpath', function () {
   });
 });
 
-describe('bouncer', function () {
+describe('bouncer()', function () {
   it('allows you to arbitrarily add bouncers to routers', function () {
     const router = buildRouter();
     router.bouncer(_.constant('AUTHENTICATE'));
