@@ -25,15 +25,15 @@ export default class Router extends BaseRouter {
   secureSubpath (params) {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
 
-    let resolvers = params.resolve;
-    if (_.isNil(resolvers)) resolvers = [];
-    if (_.isFunction(resolvers)) resolvers = [resolvers];
+    let bouncers = params.bouncer;
+    if (_.isNil(bouncers)) bouncers = [];
+    if (_.isFunction(bouncers)) bouncers = [bouncers];
 
     const innerRouter = new Router();
     this.pathDefinitions.push(createPathDefinition({
       path: params.path,
       innerRouters: [innerRouter],
-      resolvers,
+      bouncers,
     }));
     this.use(params.path, innerRouter);
     return innerRouter;
@@ -43,9 +43,9 @@ export default class Router extends BaseRouter {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
     if (_.isNil(params.method)) throw new Error('Must pass a method to secureEndpoint');
 
-    let resolvers = params.resolve;
-    if (_.isNil(resolvers)) resolvers = [];
-    if (_.isFunction(resolvers)) resolvers = [resolvers];
+    let bouncers = params.bouncer;
+    if (_.isNil(bouncers)) bouncers = [];
+    if (_.isFunction(bouncers)) bouncers = [bouncers];
 
     let middleware = params.middleware;
     if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureEndpoint');
@@ -53,7 +53,7 @@ export default class Router extends BaseRouter {
 
     this.pathDefinitions.push(createPathDefinition({
       path: params.path,
-      resolvers,
+      bouncers,
       methods: [params.method.toUpperCase()],
     }));
 
@@ -88,8 +88,8 @@ export default class Router extends BaseRouter {
 
       urlSegment = urlSegment.substr(matchedUrlSegment.length);
 
-      return Promise.mapSeries(pathDefinition.resolvers, function (resolver) {
-        return Promise.resolve(resolver(req))
+      return Promise.mapSeries(pathDefinition.bouncers, function (bouncer) {
+        return Promise.resolve(bouncer(req))
         .then(function (result) {
           if (result === 'DENY') throw new Error();
           return result;
@@ -131,7 +131,7 @@ function createPathDefinition (definition) {
   return _.defaults({}, definition, {
     regexp: pathToRegexp(definition.path, {end: false, sensitive: true, strict: false}),
     innerRouters: [],
-    resolvers: [],
+    bouncers: [],
     methods: http.METHODS,
   });
 }

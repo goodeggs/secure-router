@@ -22,7 +22,7 @@ app.use(router);
 router.secureEndpoint({
   method: 'GET',
   path: '/the-crown-jewels',
-  resolve (req) {
+  bouncer (req) {
     if (req.user.isRoyalty) return 'ALLOW';
   },
   middleware (req, res) {
@@ -34,7 +34,7 @@ router.secureEndpoint({
 
 mi6Router = router.secureSubpath({
   path: '/mi6',
-  resolve (req) {
+  bouncer (req) {
     if (req.user.isJamesBond) return 'ALLOW';
   }
 });
