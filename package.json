@@ -26,6 +26,7 @@
     "lint": "eslint '**/*.js'  --ignore-path .gitignore"
   },
   "dependencies": {
+    "babel-polyfill": "^6.9.1",
     "bluebird": "^3.4.1",
     "lodash": "^4.13.1",
     "path-to-regexp": "^1.5.3",
