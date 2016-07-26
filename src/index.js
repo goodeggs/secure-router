@@ -1,8 +1,9 @@
 import BaseRouter from 'router';
 import Promise from 'bluebird';
 import _ from 'lodash';
-import pathToRegexp from 'path-to-regexp';
 import http from 'http';
+import pathToRegexp from 'path-to-regexp';
+import url from 'url';
 
 export default class Router extends BaseRouter {
   constructor (...args) {
@@ -14,7 +15,8 @@ export default class Router extends BaseRouter {
   bounceRequests () {
     const router = this;
     router.use(function (req, res, next) {
-      router.resolveCustomSecurity(req, res, req.url)
+      const parsedUrl = url.parse(req.url);
+      router.resolveCustomSecurity(req, res, parsedUrl.pathname)
       .then(function (results) {
         function someResultsMatch (test) {
           return _.some(results, (result) => result === test);

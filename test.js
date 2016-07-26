@@ -125,6 +125,21 @@ describe('secureEndpoint()', function () {
     .then(() => expectRequest('GET', '/foo').toReturnCode(401))
     .then(() => expectRequest('HEAD', '/bar').toReturnCode(401));
   });
+
+  it('allows requests with URL parameters', function () {
+    const router = buildRouter();
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/foo',
+      bouncers: [
+        _.constant('AUTHENTICATE'),
+        _.constant('AUTHORIZE'),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo?bar=baz').toReturnCode(200));
+  });
 });
 
 describe('secureSubpath()', function () {
