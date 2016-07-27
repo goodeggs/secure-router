@@ -25,9 +25,9 @@ export default class Router extends BaseRouter {
           return _.every(results, (result) => result !== test);
         }
 
-        if (someResultsMatch('DENY')) return res.sendStatus(401);
-        if (noResultsMatch('AUTHENTICATE')) return res.sendStatus(401);
-        if (noResultsMatch('AUTHORIZE')) return res.sendStatus(403);
+        if (someResultsMatch(Router.DENY)) return res.sendStatus(401);
+        if (noResultsMatch(Router.AUTHENTICATE)) return res.sendStatus(401);
+        if (noResultsMatch(Router.AUTHORIZE)) return res.sendStatus(403);
         return next();
       });
     });
@@ -142,6 +142,10 @@ export default class Router extends BaseRouter {
     return {pathDefinition: null, matchedUrlSegment: ''};
   }
 }
+
+Router.AUTHORIZE = 'AUTHORIZE';
+Router.AUTHENTICATE = 'AUTHENTICATE';
+Router.DENY = 'DENY';
 
 function createPathDefinition (definition) {
   return _.defaults({}, definition, {

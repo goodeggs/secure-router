@@ -29,8 +29,8 @@ describe('use()', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -47,8 +47,8 @@ describe('secureEndpoint()', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -64,8 +64,8 @@ describe('secureEndpoint()', function () {
       method: 'POST',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -81,8 +81,8 @@ describe('secureEndpoint()', function () {
       method: 'PUT',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -98,8 +98,8 @@ describe('secureEndpoint()', function () {
       method: 'DELETE',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -115,8 +115,8 @@ describe('secureEndpoint()', function () {
       method: 'HEAD',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -132,8 +132,8 @@ describe('secureEndpoint()', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -148,8 +148,8 @@ describe('secureSubpath()', function () {
     router.secureSubpath({
       path: '/sub',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
@@ -166,8 +166,8 @@ describe('secureSubpath()', function () {
     router.secureSubpath({
       path: '/sub',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
     })
     .use('/subsub', subSubRouter);
@@ -182,8 +182,8 @@ describe('secureSubpath()', function () {
     subRouter.secureSubpath({
       path: '/subsub',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
       ],
     })
     .get('/foo', (req, res) => res.sendStatus(200));
@@ -197,8 +197,8 @@ describe('secureSubpath()', function () {
 describe('bouncer()', function () {
   it('allows you to arbitrarily add bouncers to routers', function () {
     const router = buildRouter();
-    router.bouncer(_.constant('AUTHENTICATE'));
-    router.bouncer(_.constant('AUTHORIZE'));
+    router.bouncer(_.constant(Router.AUTHENTICATE));
+    router.bouncer(_.constant(Router.AUTHORIZE));
     router.get('/foo', (req, res) => res.sendStatus(200));
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toReturnCode(200));
@@ -227,9 +227,9 @@ describe('allowing and denying', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
-        _.constant('DENY'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+        _.constant(Router.DENY),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -243,8 +243,8 @@ describe('allowing and denying', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
         _.constant(),
       ],
       middleware: (req, res) => res.sendStatus(200),
@@ -260,7 +260,7 @@ describe('allowing and denying', function () {
       path: '/foo',
       bouncers: [
         _.constant(),
-        _.constant('AUTHORIZE'),
+        _.constant(Router.AUTHORIZE),
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
@@ -274,7 +274,7 @@ describe('allowing and denying', function () {
       method: 'GET',
       path: '/foo',
       bouncers: [
-        _.constant('AUTHENTICATE'),
+        _.constant(Router.AUTHENTICATE),
         _.constant(),
       ],
       middleware: (req, res) => res.sendStatus(200),
@@ -290,9 +290,9 @@ describe('bouncer arguments', function () {
     let url;
     router.bouncer(function (req) {
       url = req.url;
-      return 'AUTHENTICATE';
+      return Router.AUTHENTICATE;
     });
-    router.bouncer(_.constant('AUTHORIZE'));
+    router.bouncer(_.constant(Router.AUTHORIZE));
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toReturnCode(404))
     .then(function () {
@@ -304,9 +304,9 @@ describe('bouncer arguments', function () {
     const router = buildRouter();
     router.bouncer(function (req, res) {
       res.set('x-foo', 'bar');
-      return 'AUTHENTICATE';
+      return Router.AUTHENTICATE;
     });
-    router.bouncer(_.constant('AUTHORIZE'));
+    router.bouncer(_.constant(Router.AUTHORIZE));
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toHaveHeader('x-foo', 'bar'));
   });
