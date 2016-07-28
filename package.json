@@ -20,13 +20,12 @@
     "build": "rm -rf build/ && babel src -d build && cp package.json can_publish build/",
     "prepublish": "./can_publish",
     "postpublish": "npm cache clean",
-    "test:mocha": "NODE_ENV=test mocha --compilers=js:babel-register --require=babel-polyfill test.js",
+    "test:mocha": "NODE_ENV=test mocha --compilers=js:babel-register test.js",
     "test:watch": "npm run test:mocha -- --watch",
     "test": "npm run lint && npm run test:mocha --",
     "lint": "eslint '**/*.js'  --ignore-path .gitignore"
   },
   "dependencies": {
-    "babel-polyfill": "^6.9.1",
     "bluebird": "^3.4.1",
     "lodash": "^4.13.1",
     "path-to-regexp": "^1.5.3",
