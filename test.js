@@ -312,10 +312,51 @@ describe('bouncer arguments', function () {
   });
 });
 
+describe('custom denials with Router.denyWith()', function () {
+  it('can provide custom status codes', function () {
+    const router = buildRouter();
+    router.bouncer(function () {
+      return Router.denyWith({statusCode: 404});
+    });
+    return withRunningServer(router)
+    .then(() => expectRequest('GET', '/foo').toReturnCode(404));
+  });
+
+  it('can provide a custom response payload as a string', function () {
+    const router = buildRouter();
+    router.bouncer(function () {
+      return Router.denyWith({payload: 'Nope, sorry, not today!'});
+    });
+    return withRunningServer(router)
+    .then(function () {
+      return Promise.all([
+        expectRequest('GET', '/foo').toReturnCode(401),
+        expectRequest('GET', '/foo').toReturnBody('Nope, sorry, not today!'),
+      ]);
+    });
+  });
+
+  it('can provide a custom response payload as an object', function () {
+    const router = buildRouter();
+    router.bouncer(function () {
+      return Router.denyWith({payload: {error: true, ms: 10239}});
+    });
+    return withRunningServer(router)
+    .then(function () {
+      return Promise.all([
+        expectRequest('GET', '/foo').toReturnCode(401),
+        expectRequest('GET', '/foo').toReturnBody({error: true, ms: 10239}),
+      ]);
+    });
+  });
+});
+
+
 function expectRequest (method, path) {
   const reqPromise = Promise.fromCallback(function (cb) {
     request({
       method,
+      json: true,
       url: `http://localhost:19288${path}`,
     }, cb);
   });
@@ -330,7 +371,13 @@ function expectRequest (method, path) {
     toHaveHeader (name, value) {
       return reqPromise
       .then(function (response) {
-        assert.equal(response.headers[name], value, `Expected request to ${path} to have header ${name} of value ${value}, but got ${response.headers[name]} instead.`);
+        assert.equal(response.headers[name], value, `Expected request to ${path} to respond with header ${name} of value ${value}, but got ${response.headers[name]} instead.`);
+      });
+    },
+    toReturnBody (body) {
+      return reqPromise
+      .then(function (response) {
+        assert.deepEqual(response.body, body, `Expected request to ${path} to return body ${JSON.stringify(body)}, but got ${JSON.stringify(response.body)} instead.`);
       });
     },
   };

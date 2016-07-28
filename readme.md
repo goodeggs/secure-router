@@ -75,8 +75,8 @@ short-circuits with a `403` status.
 All bouncers are individual functions, that accept a `req` and a `res` argument
 (this is the same `req` that an express middleware receives), and return a
 promise.  If the promise resolves to anything other than `SecureRouter.DENY`,
-`SecureRouter.AUTHENTICATE`, or `SecureRouter.AUTHORIZE`, the bouncer is
-ignored.
+`SecureRouter.AUTHENTICATE`, `SecureRouter.AUTHORIZE`, or the result of
+`SecureRouter.denyWith()`, the bouncer is ignored.
 
 Example:
 
@@ -85,9 +85,22 @@ const bouncer = function (req, res) {
   getSecurityClearanceLevel(req.user.id)
   .then(function (level) {
     if (level === 'TOP SECRET') return SecureRouter.AUTHORIZE;
+    else return SecureRouter.denyWith({
+      statusCode: 404,
+      payload: 'Nothing to see here, move along.'
+    });
   });
 }
 ```
+
+### denyWith()
+
+Returns a bouncer response that will cause the bouncer to deny the request,
+and will edit the response to whatever you specify.
+
+- `statusCode`: `Number`, changes the statusCode of the response.
+- `payload`: `Object`, is sent directly to the client in the body of the
+  request.
 
 ### Defining bouncers on individual endpoints
 

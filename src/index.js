@@ -12,22 +12,38 @@ export default class Router extends BaseRouter {
     this.pathDefinitions = [];
   }
 
+  static denyWith (params) {
+    return _.assign({}, Router.DENY, params);
+  }
+
   bounceRequests () {
     const router = this;
     router.use(function (req, res, next) {
       const parsedUrl = url.parse(req.url);
       router.resolveCustomSecurity(req, res, parsedUrl.pathname)
       .then(function (results) {
-        function someResultsMatch (test) {
-          return _.some(results, (result) => result === test);
-        }
-        function noResultsMatch (test) {
-          return _.every(results, (result) => result !== test);
+        function match (result, expectedValue) {
+          return _.isObject(result) && result.value === expectedValue;
         }
 
-        if (someResultsMatch(Router.DENY)) return res.sendStatus(401);
-        if (noResultsMatch(Router.AUTHENTICATE)) return res.sendStatus(401);
-        if (noResultsMatch(Router.AUTHORIZE)) return res.sendStatus(403);
+        function someResultsMatch (expectedValue) {
+          return _.some(results, (result) => match(result, expectedValue));
+        }
+        function noResultsMatch (expectedValue) {
+          return _.every(results, (result) => !match(result, expectedValue));
+        }
+
+        if (someResultsMatch(DENY)) {
+          const denyResults = _.filter(results, (result) => match(result, DENY));
+          const statusCodes = _(denyResults).map('statusCode').uniq().compact().sort().value();
+          res.status(statusCodes.length > 0 ? statusCodes[0] : 401);
+
+          const payloads = _(denyResults).map('payload').uniq().compact().sort().value();
+          return res.send(payloads[0]);
+        }
+
+        if (noResultsMatch(AUTHENTICATE)) return res.sendStatus(401);
+        if (noResultsMatch(AUTHORIZE)) return res.sendStatus(403);
         return next();
       });
     });
@@ -143,9 +159,13 @@ export default class Router extends BaseRouter {
   }
 }
 
-Router.AUTHORIZE = 'AUTHORIZE';
-Router.AUTHENTICATE = 'AUTHENTICATE';
-Router.DENY = 'DENY';
+const AUTHORIZE = 'AUTHORIZE';
+const AUTHENTICATE = 'AUTHENTICATE';
+const DENY = 'DENY';
+
+Router.AUTHORIZE = {value: AUTHORIZE};
+Router.AUTHENTICATE = {value: AUTHENTICATE};
+Router.DENY = {value: DENY};
 
 function createPathDefinition (definition) {
   return _.defaults({}, definition, {
