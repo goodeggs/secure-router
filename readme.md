@@ -26,8 +26,8 @@ router.secureEndpoint({
   method: 'GET',
   path: '/the-crown-jewels',
   bouncers: [
-    ((req) => if (req.user) return 'AUTHENTICATE'),
-    ((req) => if (req.user.isRoyalty) return 'AUTHORIZE'),
+    ((req) => if (req.user) return SecureRouter.AUTHENTICATE),
+    ((req) => if (req.user.isRoyalty) return SecureRouter.AUTHORIZE),
   ],
   middleware (req, res) {
     req.send(theCrownJewels)
@@ -39,9 +39,9 @@ router.secureEndpoint({
 secretRouter = router.secureSubpath({
   path: '/secrets',
   bouncers: [
-    ((req) => if (req.user) return 'AUTHENTICATE'),
-    ((req) => if (req.user.classification === 'MI6') return 'AUTHORIZE'),
-    ((req) => if (req.user.number === '006') return 'DENY'),
+    ((req) => if (req.user) return SecureRouter.AUTHENTICATE),
+    ((req) => if (req.user.classification === 'MI6') return SecureRouter.AUTHORIZE),
+    ((req) => if (req.user.number === '006') return return SecureRouter.DENY),
   ],
 });
 
@@ -74,8 +74,9 @@ short-circuits with a `403` status.
 
 All bouncers are individual functions, that accept a `req` and a `res` argument
 (this is the same `req` that an express middleware receives), and return a
-promise.  If the promise resolves to anything other than `DENY`,
-`AUTHENTICATE`, or `AUTHORIZE`, the bouncer is ignored.
+promise.  If the promise resolves to anything other than `SecureRouter.DENY`,
+`SecureRouter.AUTHENTICATE`, `SecureRouter.AUTHORIZE`, or the result of
+`SecureRouter.denyWith()`, the bouncer is ignored.
 
 Example:
 
@@ -83,10 +84,23 @@ Example:
 const bouncer = function (req, res) {
   getSecurityClearanceLevel(req.user.id)
   .then(function (level) {
-    if (level === 'TOP SECRET') return 'AUTHORIZE';
+    if (level === 'TOP SECRET') return SecureRouter.AUTHORIZE;
+    else return SecureRouter.denyWith({
+      statusCode: 404,
+      payload: 'Nothing to see here, move along.'
+    });
   });
 }
 ```
+
+### denyWith()
+
+Returns a bouncer response that will cause the bouncer to deny the request,
+and will edit the response to whatever you specify.
+
+- `statusCode`: `Number`, changes the statusCode of the response.
+- `payload`: `Object`, is sent directly to the client in the body of the
+  request.
 
 ### Defining bouncers on individual endpoints
 
