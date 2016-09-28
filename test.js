@@ -140,6 +140,35 @@ describe('secureEndpoint()', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo?bar=baz').toReturnCode(200));
   });
+
+  it('ignores bouncers on other paths that do not share a secureSubpath', function () {
+    const router = buildRouter();
+    const fooRouter = new Router();
+
+    router.use('/foo', fooRouter);
+    fooRouter.secureEndpoint({
+      method: 'POST',
+      path: '/',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+    fooRouter.secureEndpoint({
+      method: 'POST',
+      path: '/:id/destroy',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.denyWith({statusCode: 403})),
+      ],
+      middleware: (req, res) => res.sendStatus(200),
+    });
+
+    return withRunningServer(router)
+      .then(() => expectRequest('POST', '/foo').toReturnCode(200))
+      .then(() => expectRequest('POST', '/foo/123/destroy').toReturnCode(403));
+  });
 });
 
 describe('secureSubpath()', function () {
