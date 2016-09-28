@@ -148,6 +148,10 @@ export default class Router extends BaseRouter {
 
   getPathDefinitionMatching (urlSegment, method) {
     let matches, hasMethod;
+    /* start with most specific path definition */
+    this.pathDefinitions.sort((a, b) =>
+      b.path.split('/').length - a.path.split('/').length
+    );
     for (const pathDefinition of this.pathDefinitions) {
       matches = pathDefinition.regexp.exec(urlSegment);
       hasMethod = _.isNil(method) || _.includes(pathDefinition.methods, method);
