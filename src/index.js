@@ -150,7 +150,7 @@ export default class Router extends BaseRouter {
     let matches, hasMethod;
     /* start with most specific path definition */
     this.pathDefinitions.sort((a, b) =>
-      b.path.split('/').length - a.path.split('/').length
+      _.compact(b.path.split('/')).length - _.compact(a.path.split('/')).length
     );
     for (const pathDefinition of this.pathDefinitions) {
       matches = pathDefinition.regexp.exec(urlSegment);

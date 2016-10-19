@@ -157,7 +157,7 @@ describe('secureEndpoint()', function () {
     });
     fooRouter.secureEndpoint({
       method: 'POST',
-      path: '/:id/destroy',
+      path: '/:id',
       bouncers: [
         _.constant(Router.AUTHENTICATE),
         _.constant(Router.denyWith({statusCode: 403})),
@@ -167,7 +167,7 @@ describe('secureEndpoint()', function () {
 
     return withRunningServer(router)
       .then(() => expectRequest('POST', '/foo').toReturnCode(200))
-      .then(() => expectRequest('POST', '/foo/123/destroy').toReturnCode(403));
+      .then(() => expectRequest('POST', '/foo/123').toReturnCode(403));
   });
 });
 
