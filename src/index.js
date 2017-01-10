@@ -1,9 +1,12 @@
 import BaseRouter from 'router';
 import Promise from 'bluebird';
 import _ from 'lodash';
+import configureDebug from 'debug';
 import http from 'http';
 import pathToRegexp from 'path-to-regexp';
 import url from 'url';
+
+const debug = configureDebug('secure-router');
 
 export default class Router extends BaseRouter {
   constructor (...args) {
@@ -39,11 +42,21 @@ export default class Router extends BaseRouter {
           res.status(statusCodes.length > 0 ? statusCodes[0] : 401);
 
           const payloads = _(denyResults).map('payload').uniq().compact().sort().value();
+          debug('Got one or more DENY', {denyResults});
           return res.send(payloads[0]);
         }
 
-        if (noResultsMatch(AUTHENTICATE)) return res.sendStatus(401);
-        if (noResultsMatch(AUTHORIZE)) return res.sendStatus(403);
+        if (noResultsMatch(AUTHENTICATE)) {
+          debug('Got no AUTHENTICATE from any bouncer, sending 401', {results});
+          return res.sendStatus(401);
+        }
+
+        if (noResultsMatch(AUTHORIZE)) {
+          debug('Got no AUTHORIZE from any bouncer, sending 403', {results});
+          return res.sendStatus(403);
+        }
+
+        debug('Got one or more AUTHENTICATE and one or more AUTHORIZE', {results});
         return next();
       });
     });
@@ -125,6 +138,7 @@ export default class Router extends BaseRouter {
       const innerRouters = [];
 
       const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
+      debug('Found matching path definitions', {pathDefinition, matchedUrlSegment});
       if (_.isObject(pathDefinition)) {
         urlSegment = urlSegment.substr(matchedUrlSegment.length);
         bouncers.push(...pathDefinition.bouncers);
