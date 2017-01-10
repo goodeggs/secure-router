@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "bluebird": "^3.4.1",
+    "debug": "^2.6.0",
     "lodash": "^4.13.1",
     "path-to-regexp": "^1.5.3",
     "router": "^1.1.4"
