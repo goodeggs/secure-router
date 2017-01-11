@@ -161,20 +161,19 @@ export default class Router extends BaseRouter {
   }
 
   getPathDefinitionMatching (urlSegment, method) {
-    const match = _(this.pathDefinitions)
-      .sortBy(getPathDefinitionSpecificity)
-      .map(function (pathDefinition) {
-        const matches = pathDefinition.regexp.exec(urlSegment);
-        const hasMethod = _.isNil(method) || _.includes(pathDefinition.methods, method);
-        if (_.isArray(matches) && matches.length > 0 && hasMethod) {
-          return {pathDefinition, matchedUrlSegment: matches[0]};
-        }
-      })
-      .compact()
-      .last();
-
-    if (_.isNil(match)) return {pathDefinition: null, matchedUrlSegment: ''};
-    return match;
+    let matches, hasMethod;
+    /* start with most specific path definition */
+    this.pathDefinitions.sort((a, b) =>
+      _.compact(b.path.split('/')).length - _.compact(a.path.split('/')).length
+    );
+    for (const pathDefinition of this.pathDefinitions) {
+      matches = pathDefinition.regexp.exec(urlSegment);
+      hasMethod = _.isNil(method) || _.includes(pathDefinition.methods, method);
+      if (_.isArray(matches) && matches.length > 0 && hasMethod) {
+        return {pathDefinition, matchedUrlSegment: matches[0]};
+      }
+    }
+    return {pathDefinition: null, matchedUrlSegment: ''};
   }
 }
 
@@ -193,8 +192,4 @@ function createPathDefinition (definition) {
     bouncers: [],
     methods: http.METHODS,
   });
-}
-
-function getPathDefinitionSpecificity (pathDefinition) {
-  return _.compact(pathDefinition.path.split('/')).length;
 }
