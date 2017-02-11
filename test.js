@@ -342,6 +342,19 @@ describe('bouncer arguments', function () {
 });
 
 describe('custom denials with Router.denyWith()', function () {
+  it('can run arbitrary middleware instead of responding', function () {
+    const router = buildRouter();
+    router.bouncer(function () {
+      return Router.denyWith(function (req, res) {
+        res.send(408);
+      });
+    });
+    return withRunningServer(router)
+    .then(function () {
+      return expectRequest('GET', '/foo').toReturnCode(408);
+    });
+  });
+
   it('can provide custom status codes', function () {
     const router = buildRouter();
     router.bouncer(function () {

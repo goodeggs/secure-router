@@ -93,14 +93,34 @@ const bouncer = function (req, res) {
 }
 ```
 
-### denyWith()
+### `denyWith(<middleware|response>)`
 
 Returns a bouncer response that will cause the bouncer to deny the request,
-and will edit the response to whatever you specify.
+and will edit the response to whatever you specify. Takes either a function or
+a configuration object.
 
-- `statusCode`: `Number`, changes the statusCode of the response.
-- `payload`: `Object`, is sent directly to the client in the body of the
-  request.
+- `middleware`: `function(req, res, next)`, is parsed like any other express middleware.
+- `response.statusCode`: `number`, changes the statusCode of the response.
+- `response.payload`: one of the following:
+  - `string`, is sent in the body of the response.
+  - `object`, is sent in the body of the response.
+  
+Examples:
+
+```js
+// with middleware
+SecureRouter.denyWith(function (req, res, next) {
+  // assuming AuthenticationError is defined elsewhere in your app
+  // and handled later in another middleware that comes after bounceRequests
+  return next(new AuthenticationError('Provide a site_token cookie!'));
+}
+
+// with a configuration object
+SecureRouter.denyWith({
+  statusCode: 404,
+  payload: 'Nothing to see here, move along.'
+});
+```
 
 ### Defining bouncers on individual endpoints
 
