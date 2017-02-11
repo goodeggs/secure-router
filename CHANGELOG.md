@@ -1,3 +1,8 @@
+# [v3.0.0](https://github.com/goodeggs/secure-router/compare/v2.1.1...v3.0.0)
+
+- If there is more than one bouncer that `DENY`s, the first one that is encountered
+  is the one that will determine the response of the request.
+
 # [v2.0.0](https://github.com/goodeggs/secure-router/compare/v1.2.1...v2.0.0)
 
 - `AUTHENTICATE`, `AUTHORIZE`, and `DENY` are now constants that live on the
