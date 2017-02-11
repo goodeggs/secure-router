@@ -26,6 +26,7 @@
     "lint": "eslint '**/*.js'  --ignore-path .gitignore"
   },
   "dependencies": {
+    "async": "^2.1.4",
     "bluebird": "^3.4.1",
     "debug": "^2.6.0",
     "lodash": "^4.13.1",

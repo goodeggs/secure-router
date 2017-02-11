@@ -5,6 +5,7 @@ import configureDebug from 'debug';
 import http from 'http';
 import pathToRegexp from 'path-to-regexp';
 import url from 'url';
+import async from 'async';
 
 const debug = configureDebug('secure-router');
 
@@ -16,7 +17,21 @@ export default class Router extends BaseRouter {
   }
 
   static denyWith (params) {
-    return _.assign({}, Router.DENY, params);
+    let middleware;
+
+    if (_.isFunction(params)) {
+      debug('Creating denial with a provided middleware function');
+      middleware = params;
+    } else if (_.isObject(params)) {
+      debug('Creating denial with params', params);
+      middleware = (req, res) => {
+        debug('Responding to request with procedural denyWith middleware');
+        res.status(_.get(params, 'statusCode', 401));
+        res.send(params.payload);
+      };
+    }
+
+    return _.assign({}, Router.DENY, {middleware});
   }
 
   bounceRequests () {
@@ -38,12 +53,13 @@ export default class Router extends BaseRouter {
 
         if (someResultsMatch(DENY)) {
           const denyResults = _.filter(results, (result) => match(result, DENY));
-          const statusCodes = _(denyResults).map('statusCode').uniq().compact().sort().value();
-          res.status(statusCodes.length > 0 ? statusCodes[0] : 401);
-
-          const payloads = _(denyResults).map('payload').uniq().compact().sort().value();
           debug('Got one or more DENY', {denyResults});
-          return res.send(payloads[0]);
+          async.eachSeries(
+            _.map(denyResults, 'middleware'),
+            (middleware, callback) => middleware(req, res, callback),
+            next
+          );
+          return;
         }
 
         if (noResultsMatch(AUTHENTICATE)) {
@@ -183,7 +199,13 @@ const DENY = 'DENY';
 
 Router.AUTHORIZE = {value: AUTHORIZE};
 Router.AUTHENTICATE = {value: AUTHENTICATE};
-Router.DENY = {value: DENY};
+Router.DENY = {
+  value: DENY,
+  middleware (req, res) {
+    debug('Default DENY middleware responding with 401');
+    res.sendStatus(401);
+  },
+};
 
 function createPathDefinition (definition) {
   return _.defaults({}, definition, {
