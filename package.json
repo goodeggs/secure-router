@@ -1,6 +1,6 @@
 {
   "name": "secure-router",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Helping you write more secure express apps.",
   "keywords": [
     "express",
