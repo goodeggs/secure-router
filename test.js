@@ -391,6 +391,55 @@ describe('custom denials with Router.denyWith()', function () {
       ]);
     });
   });
+
+  it('applies denials in tree order (root first)', function () {
+    /*
+     * set up the following structure:
+     *    / (bouncer1, bouncer2)
+     *      /foo (bouncer3)
+     *        /bar (bouncer4)
+     */
+    const router = buildRouter();
+    const subRouter = new Router();
+    const middlewareCalls = [];
+    router.bouncer(function () {
+      return Router.denyWith(function (req, res, next) {
+        middlewareCalls.push(1);
+        next();
+      });
+    });
+    router.use('/foo', subRouter);
+    subRouter.secureEndpoint({
+      method: 'GET',
+      path: '/bar',
+      bouncer () {
+        return Router.denyWith(function (req, res) {
+          middlewareCalls.push(4);
+          res.sendStatus(400);
+        });
+      },
+      middleware: (req, res) => res.send(501),
+    });
+    router.bouncer(function () {
+      return Router.denyWith(function (req, res, next) {
+        middlewareCalls.push(2);
+        next();
+      });
+    });
+    subRouter.bouncer(function () {
+      return Router.denyWith(function (req, res, next) {
+        middlewareCalls.push(3);
+        next();
+      }, 3);
+    });
+    return withRunningServer(router)
+    .then(function () {
+      return expectRequest('GET', '/foo/bar').toReturnCode(400)
+      .then(function () {
+        assert.deepEqual(middlewareCalls, [1, 2, 3, 4]);
+      });
+    });
+  });
 });
 
 

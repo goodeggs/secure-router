@@ -16,7 +16,7 @@ export default class Router extends BaseRouter {
     this.pathDefinitions = [];
   }
 
-  static denyWith (params) {
+  static denyWith (params, i) {
     let middleware;
 
     if (_.isFunction(params)) {
@@ -31,7 +31,7 @@ export default class Router extends BaseRouter {
       };
     }
 
-    return _.assign({}, Router.DENY, {middleware});
+    return _.assign({}, Router.DENY, {middleware, i});
   }
 
   bounceRequests () {
@@ -54,6 +54,7 @@ export default class Router extends BaseRouter {
         if (someResultsMatch(DENY)) {
           const denyResults = _.filter(results, (result) => match(result, DENY));
           debug('Got one or more DENY', {denyResults});
+          // TODO(@max) sort here???
           async.eachSeries(
             _.map(denyResults, 'middleware'),
             (middleware, callback) => middleware(req, res, callback),
@@ -149,7 +150,6 @@ export default class Router extends BaseRouter {
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
   resolveCustomSecurity (req, res, urlSegment) {
     return Promise.try(() => {
-      const bouncerResults = [];
       const bouncers = [...this.bouncers];
       const innerRouters = [];
 
@@ -162,17 +162,12 @@ export default class Router extends BaseRouter {
       }
 
       return Promise.all([
-        Promise.map(bouncers, function (bouncer) {
-          return Promise.resolve(bouncer(req, res))
-          .then((result) => bouncerResults.push(result));
-        }),
-
-        Promise.map(innerRouters, function (innerRouter) {
-          return innerRouter.resolveCustomSecurity(req, res, urlSegment)
-          .then((results) => bouncerResults.push(...results));
-        }),
+        Promise.map(bouncers, (bouncer) => Promise.resolve(bouncer(req, res))),
+        Promise.map(innerRouters, (innerRouter) =>
+          innerRouter.resolveCustomSecurity(req, res, urlSegment)
+        ),
       ])
-      .then(() => bouncerResults);
+      .then(([bouncerResults, innerRouterResults]) => bouncerResults.concat(_.flatten(innerRouterResults)));
     });
   }
 
