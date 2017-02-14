@@ -16,7 +16,7 @@ export default class Router extends BaseRouter {
     this.pathDefinitions = [];
   }
 
-  static denyWith (params) {
+  static denyWith (params, i) {
     let middleware;
 
     if (_.isFunction(params)) {
@@ -31,7 +31,7 @@ export default class Router extends BaseRouter {
       };
     }
 
-    return _.assign({}, Router.DENY, {middleware});
+    return _.assign({}, Router.DENY, {middleware, i});
   }
 
   bounceRequests () {
@@ -54,6 +54,7 @@ export default class Router extends BaseRouter {
         if (someResultsMatch(DENY)) {
           const denyResults = _.filter(results, (result) => match(result, DENY));
           debug('Got one or more DENY', {denyResults});
+          // TODO(@max) sort here???
           async.eachSeries(
             _.map(denyResults, 'middleware'),
             (middleware, callback) => middleware(req, res, callback),
@@ -147,32 +148,33 @@ export default class Router extends BaseRouter {
   }
 
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
-  resolveCustomSecurity (req, res, urlSegment) {
+  resolveCustomSecurity (req, res, urlSegment, depth = 0) {
     return Promise.try(() => {
-      const bouncerResults = [];
       const bouncers = [...this.bouncers];
       const innerRouters = [];
 
+      console.error('INITIAL BOUNCERS ON PATH DEFINITION', depth, bouncers.length);
+
       const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
-      debug('Found matching path definitions', {pathDefinition, matchedUrlSegment});
+      debug('Found matching path definitions', {pathDefinition, matchedUrlSegment, depth});
       if (_.isObject(pathDefinition)) {
         urlSegment = urlSegment.substr(matchedUrlSegment.length);
         bouncers.push(...pathDefinition.bouncers);
         innerRouters.push(...pathDefinition.innerRouters);
       }
 
-      return Promise.all([
-        Promise.map(bouncers, function (bouncer) {
-          return Promise.resolve(bouncer(req, res))
-          .then((result) => bouncerResults.push(result));
-        }),
+      console.error('RESOLVING BOUNCERS', depth, bouncers.length);
 
-        Promise.map(innerRouters, function (innerRouter) {
-          return innerRouter.resolveCustomSecurity(req, res, urlSegment)
-          .then((results) => bouncerResults.push(...results));
-        }),
+      return Promise.all([
+        Promise.map(bouncers, (bouncer) => Promise.resolve(bouncer(req, res)))
+        .tap((result) => console.log('resolved bouncers', depth, result)),
+        Promise.map(innerRouters, (innerRouter) =>
+          innerRouter.resolveCustomSecurity(req, res, urlSegment, depth + 1)
+        )
+        .tap((result) => console.log('resolved inner bouncers', depth, _.flatten(result))),
       ])
-      .then(() => bouncerResults);
+      .then(([bouncerResults, innerRouterResults]) => bouncerResults.concat(_.flatten(innerRouterResults)));
+      // .then(([bouncerResults, innerRouterResults]) => _.flatten(innerRouterResults).concat(bouncerResults));
     });
   }
 

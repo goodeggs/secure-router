@@ -391,6 +391,42 @@ describe('custom denials with Router.denyWith()', function () {
       ]);
     });
   });
+
+  it.only('applies denials in tree order (root first)', function () {
+    const router = buildRouter();
+    const middlewareCalls = [];
+    router.bouncer(function () {
+      console.log('in bouncer 1');
+      return Router.denyWith(function (req, res, next) {
+        middlewareCalls.push(1);
+        next();
+      }, 1);
+    });
+    router.secureSubpath({
+      path: '/foo',
+      bouncer () {
+        console.log('in bouncer 3');
+        return Router.denyWith(function (req, res) {
+          middlewareCalls.push(3);
+          res.sendStatus(400);
+        }, 3);
+      },
+    });
+    router.bouncer(function () {
+      console.log('in bouncer 2');
+      return Router.denyWith(function (req, res, next) {
+        middlewareCalls.push(2);
+        next();
+      }, 2);
+    });
+    return withRunningServer(router)
+    .then(function () {
+      return expectRequest('GET', '/foo').toReturnCode(400)
+      .then(function () {
+        assert.deepEqual(middlewareCalls, [1, 2, 3]);
+      });
+    });
+  });
 });
 
 
