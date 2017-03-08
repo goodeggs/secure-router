@@ -440,6 +440,26 @@ describe('custom denials with Router.denyWith()', function () {
       });
     });
   });
+
+  it('returns a 500 for an invalid bouncer (e.g. secure-router@2.1.1. Router.DENY)', function () {
+    const router = buildRouter();
+
+    router.bouncer(function () {
+      // secure-router@2.1.1 returns this kind of bouncer if you use `Router.denyWith`
+      return Promise.resolve({value: 'DENY', statusCode: 401});
+    });
+
+    router.secureEndpoint({
+      method: 'GET',
+      path: '/bar',
+      middleware: (req, res) => res.send(200),
+    });
+
+    return withRunningServer(router)
+    .then(function () {
+      return expectRequest('GET', '/bar').toReturnCode(500);
+    });
+  });
 });
 
 
