@@ -2,6 +2,14 @@
 
 - If there is more than one bouncer that `DENY`s, the first one that is encountered
   is the one that will determine the response of the request.
+  
+- **BEWARE** - Bouncers are now expected to return a promise that resolves with an object
+  that has a `middleware` property. Versions of `goodeggs-authentication-tokens` [<10.0.0](https://github.com/goodeggs/goodeggs-authentication-tokens/blob/master/CHANGELOG.md#v1000)
+  use an earlier version of `sercure-router` in which `Router.denyWith` returns an object without the property.
+  When you bump `secure-router` be sure to also bump `goodeggs-authentication-tokens`.
+  
+  Note that `goodeggs-server`@14.0.0 uses `secure-router@3.0.0`.
+  
 
 # [v2.0.0](https://github.com/goodeggs/secure-router/compare/v1.2.1...v2.0.0)
 
