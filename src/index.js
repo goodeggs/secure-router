@@ -61,6 +61,7 @@ export default class Router extends BaseRouter {
               try {
                 middleware(req, res, callback);
               } catch (err) {
+                debug('DENY middleware threw a synchronous error', err.stack);
                 callback(err);
               }
             },
