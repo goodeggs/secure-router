@@ -6,10 +6,11 @@
 - **BEWARE** - Bouncers are now expected to return a promise that resolves with an object
   that has a `middleware` property. Versions of `goodeggs-authentication-tokens` [<10.0.0](https://github.com/goodeggs/goodeggs-authentication-tokens/blob/master/CHANGELOG.md#v1000)
   use an earlier version of `sercure-router` in which `Router.denyWith` returns an object without the property.
-  When you bump `secure-router` be sure to also bump `goodeggs-authentication-tokens`.
   
-  Note that `goodeggs-server`@14.0.0 uses `secure-router@3.0.0`.
-  
+  That means in addition to bumping secure-router you *must* bump any of the following module used in the project that use secure-router: 
+  * `goodeggs-server>15`
+  * `goodeggs-authentication-tokens>10`
+  * `goodeggs-employee-roles>6`  
 
 # [v2.0.0](https://github.com/goodeggs/secure-router/compare/v1.2.1...v2.0.0)
 
