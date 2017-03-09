@@ -57,7 +57,14 @@ export default class Router extends BaseRouter {
           // TODO(@max) sort here???
           async.eachSeries(
             _.map(denyResults, 'middleware'),
-            (middleware, callback) => middleware(req, res, callback),
+            (middleware, callback) => {
+              try {
+                middleware(req, res, callback);
+              } catch (err) {
+                debug('DENY middleware threw a synchronous error', err.stack);
+                callback(err);
+              }
+            },
             next
           );
           return;
