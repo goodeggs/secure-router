@@ -50,7 +50,7 @@ describe('use()', function () {
       ],
     });
     router.use('/base/:baseId', subRouter);
-    router.use((req, res, next) => {
+    router.use((req, res) => {
       res.status(404);
       res.json(req.matchedRoutes);
     });

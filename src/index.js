@@ -166,8 +166,9 @@ export default class Router extends BaseRouter {
     }
   }
 
-  process_params (layer, called, req, res, done) {
-    var path =
+  // eslint-disable-next-line camelcase
+  process_params (layer, called, req) {
+    const path =
       _.get(req, 'route.path',
         _.get(req, 'route.regexp.source',
           _.get(layer, '__mountpath',

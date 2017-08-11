@@ -56,7 +56,8 @@
       "node": true
     },
     "rules": {
-      "prefer-reflect": 0
+      "prefer-reflect": 0,
+      "no-eq-null": 0
     }
   },
   "babel": {
