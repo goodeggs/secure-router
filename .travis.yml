@@ -3,12 +3,11 @@ dist: trusty
 
 language: node_js
 node_js:
-  - '6'
-  - '5'
-  - '4'
-  - '4.2.6'
+  - '8'
+  - '6.11.1'
+  - '4.8.4'
 
-before_install:
-  - curl -sSL https://github.com/goodeggs/travis-utils/raw/master/install-ci-tools.sh | CACHE_DIR=/tmp/ci-tools sh -s -- yarn=0.27.5
-
-install: yarn install
+cache:
+  yarn: true
+  directories:
+    - "/home/travis/.npm"
