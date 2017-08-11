@@ -132,7 +132,8 @@ export default class Router extends BaseRouter {
       return _.isFunction(router.resolveCustomSecurity);
     }
 
-    if (_.isString(path)) {
+    const pathIsString = _.isString(path);
+    if (pathIsString) {
       let {pathDefinition} = this.getPathDefinitionMatching(path);
       if (_.isNil(pathDefinition)) {
         pathDefinition = createPathDefinition({path});
@@ -147,7 +148,39 @@ export default class Router extends BaseRouter {
         this.pathDefinitions.push(...innerRouter.pathDefinitions);
       }
     }
+
+    let offset = this.stack.length;
     BaseRouter.prototype.use.apply(this, arguments);
+
+    /* so that in our monkey patch of process_params, we can know about the
+     * path of this part of the route */
+    if (pathIsString) {
+      for (; offset < this.stack.length; offset++) {
+        const layer = this.stack[offset];
+        // I'm not sure if my check for `fast_slash` is the way to go here
+        // But if I don't check for it, each stack element will add a slash to the path
+        if (layer && layer.regexp && !layer.regexp.fast_slash) {
+          layer.__mountpath = path;
+        }
+      }
+    }
+  }
+
+  process_params (layer, called, req, res, done) {
+    var path =
+      _.get(req, 'route.path',
+        _.get(req, 'route.regexp.source',
+          _.get(layer, '__mountpath',
+            '')));
+
+    if (req.matchedRoutes == null) req.matchedRoutes = [];
+    req.__route = (req.__route || '') + path;
+
+    if (!_.isEmpty(path)) {
+      req.matchedRoutes.push(path);
+    }
+
+    return BaseRouter.prototype.process_params.apply(this, arguments);
   }
 
   bouncer (bouncer) {
