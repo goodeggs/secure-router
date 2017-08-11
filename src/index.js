@@ -217,3 +217,5 @@ function createPathDefinition (definition) {
     methods: http.METHODS,
   });
 }
+
+module.exports = Router;
