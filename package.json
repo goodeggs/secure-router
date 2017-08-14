@@ -6,7 +6,7 @@
     "express",
     "security"
   ],
-  "main": "index.js",
+  "main": "build/index.js",
   "author": "Good Eggs Inc.",
   "contributors": [
     "Max Edmands <max@goodeggs.com>"
@@ -14,15 +14,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/goodeggs/goodeggs-event-processing-helper.git"
+    "url": "git://github.com/goodeggs/secure-router.git"
   },
   "scripts": {
-    "build": "rm -rf build/ && babel src -d build && cp package.json can_publish build/",
-    "prepublish": "./can_publish",
-    "postpublish": "npm cache clean",
+    "build": "rm -rf build/ && babel src -d build",
     "test:mocha": "NODE_ENV=test mocha --compilers=js:babel-register test.js",
-    "test:watch": "npm run test:mocha -- --watch",
-    "test": "npm run lint && npm run test:mocha --",
+    "test:watch": "yarn test:mocha -- --watch",
+    "test": "yarn lint && yarn test:mocha --",
     "lint": "eslint '**/*.js'  --ignore-path .gitignore"
   },
   "dependencies": {
@@ -31,11 +29,11 @@
     "debug": "^2.6.0",
     "lodash": "^4.13.1",
     "path-to-regexp": "^1.5.3",
-    "router": "^1.1.4"
+    "router": "^1.3.1"
   },
   "devDependencies": {
     "babel-cli": "^6.10.1",
-    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-env": "^1.6.0",
     "babel-preset-es2015": "^6.9.0",
     "babel-register": "^6.9.0",
     "eslint": "^3.0.1",
@@ -58,18 +56,16 @@
       "node": true
     },
     "rules": {
-      "prefer-reflect": 0
+      "prefer-reflect": 0,
+      "no-eq-null": 0
     }
   },
   "babel": {
     "presets": [
-      "es2015"
-    ],
-    "plugins": [
-      "add-module-exports"
+      "env"
     ]
   },
-  "pubishConfig": {
-    "registry": "https://npmjs.com"
+  "publishConfig": {
+    "registry": "https://registry.npmjs.com"
   }
 }

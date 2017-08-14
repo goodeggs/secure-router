@@ -38,6 +38,28 @@ describe('use()', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
+
+  it('provides req.matchedRoute to middlewares even when 404', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureSubpath({
+      path: '/nested',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+    });
+    router.use('/base/:baseId', subRouter);
+    router.use((req, res) => {
+      res.status(404);
+      res.json(req.matchedRoutes);
+    });
+    return withRunningServer(router)
+    .then(() =>
+      expectRequest('GET', '/base/2/nested/239847')
+        .toReturnBody(['/base/:baseId', '/nested'])
+    );
+  });
 });
 
 describe('secureEndpoint()', function () {
@@ -169,6 +191,29 @@ describe('secureEndpoint()', function () {
       .then(() => expectRequest('POST', '/foo').toReturnCode(200))
       .then(() => expectRequest('POST', '/foo/123').toReturnCode(403));
   });
+
+  it('provides req.matchedRoute to middlewares', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureEndpoint({
+      method: 'GET',
+      path: '/nested/:nestedId',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+      middleware: (req, res) => {
+        res.json(req.matchedRoutes);
+        res.sendStatus(200);
+      },
+    });
+    router.use('/base/:baseId', subRouter);
+    return withRunningServer(router)
+    .then(() =>
+      expectRequest('GET', '/base/2/nested/239847')
+        .toReturnBody(['/base/:baseId', '/nested/:nestedId'])
+    );
+  });
 });
 
 describe('secureSubpath()', function () {
@@ -220,6 +265,28 @@ describe('secureSubpath()', function () {
     return withRunningServer(router)
     .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
     .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
+  });
+
+  it('provides req.matchedRoute to middlewares', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureSubpath({
+      path: '/nested',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+    })
+    .get('/:nestedId', (req, res) => {
+      res.json(req.matchedRoutes);
+      res.sendStatus(200);
+    });
+    router.use('/base/:baseId', subRouter);
+    return withRunningServer(router)
+    .then(() =>
+      expectRequest('GET', '/base/2/nested/239847')
+        .toReturnBody(['/base/:baseId', '/nested', '/:nestedId'])
+    );
   });
 });
 
