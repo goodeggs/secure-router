@@ -17,6 +17,7 @@
     "url": "git://github.com/goodeggs/secure-router.git"
   },
   "scripts": {
+    "prepublish": "yarn build",
     "build": "rm -rf build/ && babel src -d build",
     "test:mocha": "NODE_ENV=test mocha --compilers=js:babel-register test.js",
     "test:watch": "yarn test:mocha -- --watch",
