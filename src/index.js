@@ -152,20 +152,18 @@ export default class Router extends BaseRouter {
     let offset = this.stack.length;
     BaseRouter.prototype.use.apply(this, arguments);
 
+    // Inspired by https://github.com/expressjs/express/issues/2879#issuecomment-180088895
     /* so that in our monkey patch of process_params, we can know about the
      * path of this part of the route */
     if (pathIsString) {
       for (; offset < this.stack.length; offset++) {
         const layer = this.stack[offset];
-        // I'm not sure if my check for `fast_slash` is the way to go here
-        // But if I don't check for it, each stack element will add a slash to the path
-        if (layer && layer.regexp && !layer.regexp.fast_slash) {
-          layer.__mountpath = path;
-        }
+        layer.__mountpath = path;
       }
     }
   }
 
+  // Inspired by https://github.com/expressjs/express/issues/2879#issuecomment-180088895
   // eslint-disable-next-line camelcase
   process_params (layer, called, req) {
     const path =
@@ -177,8 +175,9 @@ export default class Router extends BaseRouter {
     if (req.matchedRoutes == null) req.matchedRoutes = [];
     req.__route = (req.__route || '') + path;
 
-    if (!_.isEmpty(path)) {
-      req.matchedRoutes.push(path);
+    const normalizedPath = path.endsWith('/') ? path.substr(0, path.length - 1) : path;
+    if (!_.isEmpty(normalizedPath) && normalizedPath !== _.last(req.matchedRoutes)) {
+      req.matchedRoutes.push(normalizedPath);
     }
 
     return BaseRouter.prototype.process_params.apply(this, arguments);
