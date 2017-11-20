@@ -157,11 +157,7 @@ export default class Router extends BaseRouter {
     if (pathIsString) {
       for (; offset < this.stack.length; offset++) {
         const layer = this.stack[offset];
-        // I'm not sure if my check for `fast_slash` is the way to go here
-        // But if I don't check for it, each stack element will add a slash to the path
-        if (layer && layer.regexp && !layer.regexp.fast_slash) {
-          layer.__mountpath = path;
-        }
+        layer.__mountpath = path;
       }
     }
   }
@@ -177,8 +173,9 @@ export default class Router extends BaseRouter {
     if (req.matchedRoutes == null) req.matchedRoutes = [];
     req.__route = (req.__route || '') + path;
 
-    if (!_.isEmpty(path) && path !== _.last(req.matchedRoutes)) {
-      req.matchedRoutes.push(path);
+    const normalizedPath = path.endsWith('/') ? path.substr(0, path.length - 1) : path;
+    if (!_.isEmpty(normalizedPath) && normalizedPath !== _.last(req.matchedRoutes)) {
+      req.matchedRoutes.push(normalizedPath);
     }
 
     return BaseRouter.prototype.process_params.apply(this, arguments);

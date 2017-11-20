@@ -349,6 +349,47 @@ describe('secureSubpath()', function () {
         .toReturnBody(['/base/:baseId', '/nested', '/:nestedId'])
     );
   });
+
+  it('req.matchedRoutes never includes a trailing slash', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureSubpath({
+      path: '/foo',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+    })
+    .get('/', (req, res, next) => {
+      next(new Error('no.'));
+    });
+    subRouter.secureSubpath({
+      path: '/',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+    })
+    .get('/bar', (req, res, next) => {
+      next(new Error('no.'));
+    });
+    router.use('/base', subRouter);
+    router.use((err, req, res, next) => {
+      next(err);
+    });
+    // eslint-disable-next-line no-unused-vars, handle-callback-err
+    router.use((err, req, res, next) => {
+      res.json(req.matchedRoutes);
+      res.sendStatus(200);
+    });
+    return withRunningServer(router)
+    .then(() => Promise.all([
+      expectRequest('GET', '/base/foo').toReturnBody(['/base', '/foo']),
+      expectRequest('GET', '/base/foo/').toReturnBody(['/base', '/foo']),
+      expectRequest('GET', '/base/bar').toReturnBody(['/base', '/bar']),
+      expectRequest('GET', '/base/bar/').toReturnBody(['/base', '/bar']),
+    ]));
+  });
 });
 
 describe('bouncer()', function () {
