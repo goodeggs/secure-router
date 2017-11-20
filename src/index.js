@@ -152,6 +152,7 @@ export default class Router extends BaseRouter {
     let offset = this.stack.length;
     BaseRouter.prototype.use.apply(this, arguments);
 
+    // Inspired by https://github.com/expressjs/express/issues/2879#issuecomment-180088895
     /* so that in our monkey patch of process_params, we can know about the
      * path of this part of the route */
     if (pathIsString) {
@@ -162,6 +163,7 @@ export default class Router extends BaseRouter {
     }
   }
 
+  // Inspired by https://github.com/expressjs/express/issues/2879#issuecomment-180088895
   // eslint-disable-next-line camelcase
   process_params (layer, called, req) {
     const path =
