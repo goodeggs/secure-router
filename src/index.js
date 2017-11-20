@@ -177,7 +177,7 @@ export default class Router extends BaseRouter {
     if (req.matchedRoutes == null) req.matchedRoutes = [];
     req.__route = (req.__route || '') + path;
 
-    if (!_.isEmpty(path)) {
+    if (!_.isEmpty(path) && path !== _.last(req.matchedRoutes)) {
       req.matchedRoutes.push(path);
     }
 

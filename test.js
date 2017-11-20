@@ -39,7 +39,7 @@ describe('use()', function () {
     .then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 
-  it('provides req.matchedRoute to middlewares even when 404', function () {
+  it('provides req.matchedRoutes to middlewares even when 404', function () {
     const router = buildRouter();
     const subRouter = new Router();
     subRouter.secureSubpath({
@@ -192,7 +192,7 @@ describe('secureEndpoint()', function () {
       .then(() => expectRequest('POST', '/foo/123').toReturnCode(403));
   });
 
-  it('provides req.matchedRoute to middlewares', function () {
+  it('provides req.matchedRoutes to middlewares', function () {
     const router = buildRouter();
     const subRouter = new Router();
     subRouter.secureEndpoint({
@@ -208,6 +208,37 @@ describe('secureEndpoint()', function () {
       },
     });
     router.use('/base/:baseId', subRouter);
+    return withRunningServer(router)
+    .then(() =>
+      expectRequest('GET', '/base/2/nested/239847')
+        .toReturnBody(['/base/:baseId', '/nested/:nestedId'])
+    );
+  });
+
+  // regression test, see https://github.com/expressjs/express/issues/2879#issuecomment-269433170
+  it('req.matchedRoutes is correct when error middlewares run', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureEndpoint({
+      method: 'GET',
+      path: '/nested/:nestedId',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+      middleware: (req, res, next) => {
+        next(new Error('no.'));
+      },
+    });
+    router.use('/base/:baseId', subRouter);
+    router.use((err, req, res, next) => {
+      next(err);
+    });
+    // eslint-disable-next-line no-unused-vars, handle-callback-err
+    router.use((err, req, res, next) => {
+      res.json(req.matchedRoutes);
+      res.sendStatus(200);
+    });
     return withRunningServer(router)
     .then(() =>
       expectRequest('GET', '/base/2/nested/239847')
@@ -267,7 +298,7 @@ describe('secureSubpath()', function () {
     .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
   });
 
-  it('provides req.matchedRoute to middlewares', function () {
+  it('provides req.matchedRoutes to middlewares', function () {
     const router = buildRouter();
     const subRouter = new Router();
     subRouter.secureSubpath({
@@ -282,6 +313,36 @@ describe('secureSubpath()', function () {
       res.sendStatus(200);
     });
     router.use('/base/:baseId', subRouter);
+    return withRunningServer(router)
+    .then(() =>
+      expectRequest('GET', '/base/2/nested/239847')
+        .toReturnBody(['/base/:baseId', '/nested', '/:nestedId'])
+    );
+  });
+
+  // regression test, see https://github.com/expressjs/express/issues/2879#issuecomment-269433170
+  it('req.matchedRoutes is correct when error middlewares run', function () {
+    const router = buildRouter();
+    const subRouter = new Router();
+    subRouter.secureSubpath({
+      path: '/nested',
+      bouncers: [
+        _.constant(Router.AUTHENTICATE),
+        _.constant(Router.AUTHORIZE),
+      ],
+    })
+    .get('/:nestedId', (req, res, next) => {
+      next(new Error('no.'));
+    });
+    router.use('/base/:baseId', subRouter);
+    router.use((err, req, res, next) => {
+      next(err);
+    });
+    // eslint-disable-next-line no-unused-vars, handle-callback-err
+    router.use((err, req, res, next) => {
+      res.json(req.matchedRoutes);
+      res.sendStatus(200);
+    });
     return withRunningServer(router)
     .then(() =>
       expectRequest('GET', '/base/2/nested/239847')
