@@ -4,20 +4,21 @@ import _ from 'lodash';
 import assert from 'assert';
 import express from 'express';
 import request from 'request';
+import {describe, it, afterEach} from 'mocha';
 
-import Router from './src/index';
+import Router from './index';
 
 describe('default behavior', function () {
   it('denies requests to endpoints with no security middleware', function () {
     const router = buildRouter();
     router.get('/foo', (req, res) => res.send('you should never get here!'));
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('denies requests to undefined endpoints', function () {
-    return withRunningServer(buildRouter())
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+    return withRunningServer(buildRouter()).then(() =>
+      expectRequest('GET', '/foo').toReturnCode(401),
+    );
   });
 });
 
@@ -28,15 +29,11 @@ describe('use()', function () {
     subRouter.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     router.use(subRouter);
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 
   it('provides req.matchedRoutes to middlewares even when 404', function () {
@@ -44,20 +41,15 @@ describe('use()', function () {
     const subRouter = new Router();
     subRouter.secureSubpath({
       path: '/nested',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
     });
     router.use('/base/:baseId', subRouter);
     router.use((req, res) => {
       res.status(404);
       res.json(req.matchedRoutes);
     });
-    return withRunningServer(router)
-    .then(() =>
-      expectRequest('GET', '/base/2/nested/239847')
-        .toReturnBody(['/base/:baseId', '/nested'])
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/base/2/nested/239847').toReturnBody(['/base/:baseId', '/nested']),
     );
   });
 });
@@ -68,16 +60,13 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(200))
-    .then(() => expectRequest('POST', '/foo').toReturnCode(401))
-    .then(() => expectRequest('GET', '/bar').toReturnCode(401));
+      .then(() => expectRequest('GET', '/foo').toReturnCode(200))
+      .then(() => expectRequest('POST', '/foo').toReturnCode(401))
+      .then(() => expectRequest('GET', '/bar').toReturnCode(401));
   });
 
   it('allows POST access to specific secure endpoints', function () {
@@ -85,16 +74,13 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'POST',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('POST', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
-    .then(() => expectRequest('POST', '/bar').toReturnCode(401));
+      .then(() => expectRequest('POST', '/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+      .then(() => expectRequest('POST', '/bar').toReturnCode(401));
   });
 
   it('allows PUT access to specific secure endpoints', function () {
@@ -102,16 +88,13 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'PUT',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('PUT', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
-    .then(() => expectRequest('PUT', '/bar').toReturnCode(401));
+      .then(() => expectRequest('PUT', '/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+      .then(() => expectRequest('PUT', '/bar').toReturnCode(401));
   });
 
   it('allows DELETE access to specific secure endpoints', function () {
@@ -119,16 +102,13 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'DELETE',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('DELETE', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
-    .then(() => expectRequest('DELETE', '/bar').toReturnCode(401));
+      .then(() => expectRequest('DELETE', '/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+      .then(() => expectRequest('DELETE', '/bar').toReturnCode(401));
   });
 
   it('allows HEAD access to specific secure endpoints', function () {
@@ -136,16 +116,13 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'HEAD',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     return withRunningServer(router)
-    .then(() => expectRequest('HEAD', '/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401))
-    .then(() => expectRequest('HEAD', '/bar').toReturnCode(401));
+      .then(() => expectRequest('HEAD', '/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/foo').toReturnCode(401))
+      .then(() => expectRequest('HEAD', '/bar').toReturnCode(401));
   });
 
   it('allows requests with URL parameters', function () {
@@ -153,14 +130,12 @@ describe('secureEndpoint()', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo?bar=baz').toReturnCode(200));
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/foo?bar=baz').toReturnCode(200),
+    );
   });
 
   it('ignores bouncers on other paths that do not share a secureSubpath', function () {
@@ -171,19 +146,13 @@ describe('secureEndpoint()', function () {
     fooRouter.secureEndpoint({
       method: 'POST',
       path: '/',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
     fooRouter.secureEndpoint({
       method: 'POST',
       path: '/:id',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.denyWith({statusCode: 403})),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.denyWith({statusCode: 403}))],
       middleware: (req, res) => res.sendStatus(200),
     });
 
@@ -198,20 +167,18 @@ describe('secureEndpoint()', function () {
     subRouter.secureEndpoint({
       method: 'GET',
       path: '/nested/:nestedId',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => {
         res.json(req.matchedRoutes);
         res.sendStatus(200);
       },
     });
     router.use('/base/:baseId', subRouter);
-    return withRunningServer(router)
-    .then(() =>
-      expectRequest('GET', '/base/2/nested/239847')
-        .toReturnBody(['/base/:baseId', '/nested/:nestedId'])
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/base/2/nested/239847').toReturnBody([
+        '/base/:baseId',
+        '/nested/:nestedId',
+      ]),
     );
   });
 
@@ -222,10 +189,7 @@ describe('secureEndpoint()', function () {
     subRouter.secureEndpoint({
       method: 'GET',
       path: '/nested/:nestedId',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
       middleware: (req, res, next) => {
         next(new Error('no.'));
       },
@@ -239,10 +203,11 @@ describe('secureEndpoint()', function () {
       res.json(req.matchedRoutes);
       res.sendStatus(200);
     });
-    return withRunningServer(router)
-    .then(() =>
-      expectRequest('GET', '/base/2/nested/239847')
-        .toReturnBody(['/base/:baseId', '/nested/:nestedId'])
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/base/2/nested/239847').toReturnBody([
+        '/base/:baseId',
+        '/nested/:nestedId',
+      ]),
     );
   });
 });
@@ -250,73 +215,67 @@ describe('secureEndpoint()', function () {
 describe('secureSubpath()', function () {
   it('allows access to sub-resources', function () {
     const router = buildRouter();
-    router.secureSubpath({
-      path: '/sub',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/foo', (req, res) => res.sendStatus(200));
+    router
+      .secureSubpath({
+        path: '/sub',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/foo', (req, res) => res.sendStatus(200));
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/sub/bar').toReturnCode(404))
-    .then(() => expectRequest('GET', '/bar').toReturnCode(401));
+      .then(() => expectRequest('GET', '/sub/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/sub/bar').toReturnCode(404))
+      .then(() => expectRequest('GET', '/bar').toReturnCode(401));
   });
 
   it('allows access to sub-sub-resources when the security is defined at the upper layer', function () {
     const router = buildRouter();
     const subSubRouter = new Router();
     subSubRouter.get('/foo', (req, res) => res.sendStatus(200));
-    router.secureSubpath({
-      path: '/sub',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .use('/subsub', subSubRouter);
+    router
+      .secureSubpath({
+        path: '/sub',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .use('/subsub', subSubRouter);
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(404));
+      .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/sub/foo').toReturnCode(404));
   });
 
   it('allows access to sub-sub-resources when the security is defined at the lower layer', function () {
     const router = buildRouter();
     const subRouter = new Router();
-    subRouter.secureSubpath({
-      path: '/subsub',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/foo', (req, res) => res.sendStatus(200));
+    subRouter
+      .secureSubpath({
+        path: '/subsub',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/foo', (req, res) => res.sendStatus(200));
     router.use('/sub', subRouter);
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
-    .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
+      .then(() => expectRequest('GET', '/sub/subsub/foo').toReturnCode(200))
+      .then(() => expectRequest('GET', '/sub/foo').toReturnCode(401));
   });
 
   it('provides req.matchedRoutes to middlewares', function () {
     const router = buildRouter();
     const subRouter = new Router();
-    subRouter.secureSubpath({
-      path: '/nested',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/:nestedId', (req, res) => {
-      res.json(req.matchedRoutes);
-      res.sendStatus(200);
-    });
+    subRouter
+      .secureSubpath({
+        path: '/nested',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/:nestedId', (req, res) => {
+        res.json(req.matchedRoutes);
+        res.sendStatus(200);
+      });
     router.use('/base/:baseId', subRouter);
-    return withRunningServer(router)
-    .then(() =>
-      expectRequest('GET', '/base/2/nested/239847')
-        .toReturnBody(['/base/:baseId', '/nested', '/:nestedId'])
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/base/2/nested/239847').toReturnBody([
+        '/base/:baseId',
+        '/nested',
+        '/:nestedId',
+      ]),
     );
   });
 
@@ -324,16 +283,14 @@ describe('secureSubpath()', function () {
   it('req.matchedRoutes is correct when error middlewares run', function () {
     const router = buildRouter();
     const subRouter = new Router();
-    subRouter.secureSubpath({
-      path: '/nested',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/:nestedId', (req, res, next) => {
-      next(new Error('no.'));
-    });
+    subRouter
+      .secureSubpath({
+        path: '/nested',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/:nestedId', (req, res, next) => {
+        next(new Error('no.'));
+      });
     router.use('/base/:baseId', subRouter);
     router.use((err, req, res, next) => {
       next(err);
@@ -343,36 +300,34 @@ describe('secureSubpath()', function () {
       res.json(req.matchedRoutes);
       res.sendStatus(200);
     });
-    return withRunningServer(router)
-    .then(() =>
-      expectRequest('GET', '/base/2/nested/239847')
-        .toReturnBody(['/base/:baseId', '/nested', '/:nestedId'])
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/base/2/nested/239847').toReturnBody([
+        '/base/:baseId',
+        '/nested',
+        '/:nestedId',
+      ]),
     );
   });
 
   it('req.matchedRoutes never includes a trailing slash', function () {
     const router = buildRouter();
     const subRouter = new Router();
-    subRouter.secureSubpath({
-      path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/', (req, res, next) => {
-      next(new Error('no.'));
-    });
-    subRouter.secureSubpath({
-      path: '/',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-      ],
-    })
-    .get('/bar', (req, res, next) => {
-      next(new Error('no.'));
-    });
+    subRouter
+      .secureSubpath({
+        path: '/foo',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/', (req, res, next) => {
+        next(new Error('no.'));
+      });
+    subRouter
+      .secureSubpath({
+        path: '/',
+        bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE)],
+      })
+      .get('/bar', (req, res, next) => {
+        next(new Error('no.'));
+      });
     router.use('/base', subRouter);
     router.use((err, req, res, next) => {
       next(err);
@@ -382,13 +337,14 @@ describe('secureSubpath()', function () {
       res.json(req.matchedRoutes);
       res.sendStatus(200);
     });
-    return withRunningServer(router)
-    .then(() => Promise.all([
-      expectRequest('GET', '/base/foo').toReturnBody(['/base', '/foo']),
-      expectRequest('GET', '/base/foo/').toReturnBody(['/base', '/foo']),
-      expectRequest('GET', '/base/bar').toReturnBody(['/base', '/bar']),
-      expectRequest('GET', '/base/bar/').toReturnBody(['/base', '/bar']),
-    ]));
+    return withRunningServer(router).then(() =>
+      Promise.all([
+        expectRequest('GET', '/base/foo').toReturnBody(['/base', '/foo']),
+        expectRequest('GET', '/base/foo/').toReturnBody(['/base', '/foo']),
+        expectRequest('GET', '/base/bar').toReturnBody(['/base', '/bar']),
+        expectRequest('GET', '/base/bar/').toReturnBody(['/base', '/bar']),
+      ]),
+    );
   });
 });
 
@@ -398,8 +354,7 @@ describe('bouncer()', function () {
     router.bouncer(_.constant(Router.AUTHENTICATE));
     router.bouncer(_.constant(Router.AUTHORIZE));
     router.get('/foo', (req, res) => res.sendStatus(200));
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 });
 
@@ -409,14 +364,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(),
-        _.constant(),
-      ],
+      bouncers: [_.constant(), _.constant()],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('does not allow access to a resource if some security middleware authenticates, some authorizes, and one denies', function () {
@@ -431,8 +382,7 @@ describe('allowing and denying', function () {
       ],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('does allow access to a resource if some security middleware authenticates, some authorizes, and none denies', function () {
@@ -440,15 +390,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(Router.AUTHORIZE),
-        _.constant(),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant(Router.AUTHORIZE), _.constant()],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(200));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(200));
   });
 
   it('does not allow access to a resource if the middleware does not authenticate (even if it authorizes)', function () {
@@ -456,14 +401,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(),
-        _.constant(Router.AUTHORIZE),
-      ],
+      bouncers: [_.constant(), _.constant(Router.AUTHORIZE)],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(401));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(401));
   });
 
   it('does not allow access to a resource (returns a 403) if the middleware authenticates but does not authorize', function () {
@@ -471,14 +412,10 @@ describe('allowing and denying', function () {
     router.secureEndpoint({
       method: 'GET',
       path: '/foo',
-      bouncers: [
-        _.constant(Router.AUTHENTICATE),
-        _.constant(),
-      ],
+      bouncers: [_.constant(Router.AUTHENTICATE), _.constant()],
       middleware: (req, res) => res.sendStatus(200),
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(403));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(403));
   });
 });
 
@@ -492,10 +429,10 @@ describe('bouncer arguments', function () {
     });
     router.bouncer(_.constant(Router.AUTHORIZE));
     return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(404))
-    .then(function () {
-      assert(url.match(/\/foo/));
-    });
+      .then(() => expectRequest('GET', '/foo').toReturnCode(404))
+      .then(function () {
+        assert(url.match(/\/foo/));
+      });
   });
 
   it('provides res object as the second argument to the bouncer function', function () {
@@ -505,8 +442,9 @@ describe('bouncer arguments', function () {
       return Router.AUTHENTICATE;
     });
     router.bouncer(_.constant(Router.AUTHORIZE));
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toHaveHeader('x-foo', 'bar'));
+    return withRunningServer(router).then(() =>
+      expectRequest('GET', '/foo').toHaveHeader('x-foo', 'bar'),
+    );
   });
 });
 
@@ -518,8 +456,7 @@ describe('custom denials with Router.denyWith()', function () {
         res.send(408);
       });
     });
-    return withRunningServer(router)
-    .then(function () {
+    return withRunningServer(router).then(function () {
       return expectRequest('GET', '/foo').toReturnCode(408);
     });
   });
@@ -529,8 +466,7 @@ describe('custom denials with Router.denyWith()', function () {
     router.bouncer(function () {
       return Router.denyWith({statusCode: 404});
     });
-    return withRunningServer(router)
-    .then(() => expectRequest('GET', '/foo').toReturnCode(404));
+    return withRunningServer(router).then(() => expectRequest('GET', '/foo').toReturnCode(404));
   });
 
   it('can provide a custom response payload as a string', function () {
@@ -538,8 +474,7 @@ describe('custom denials with Router.denyWith()', function () {
     router.bouncer(function () {
       return Router.denyWith({payload: 'Nope, sorry, not today!'});
     });
-    return withRunningServer(router)
-    .then(function () {
+    return withRunningServer(router).then(function () {
       return Promise.all([
         expectRequest('GET', '/foo').toReturnCode(401),
         expectRequest('GET', '/foo').toReturnBody('Nope, sorry, not today!'),
@@ -552,8 +487,7 @@ describe('custom denials with Router.denyWith()', function () {
     router.bouncer(function () {
       return Router.denyWith({payload: {error: true, ms: 10239}});
     });
-    return withRunningServer(router)
-    .then(function () {
+    return withRunningServer(router).then(function () {
       return Promise.all([
         expectRequest('GET', '/foo').toReturnCode(401),
         expectRequest('GET', '/foo').toReturnBody({error: true, ms: 10239}),
@@ -581,7 +515,7 @@ describe('custom denials with Router.denyWith()', function () {
     subRouter.secureEndpoint({
       method: 'GET',
       path: '/bar',
-      bouncer () {
+      bouncer() {
         return Router.denyWith(function (req, res) {
           middlewareCalls.push(4);
           res.sendStatus(400);
@@ -601,12 +535,12 @@ describe('custom denials with Router.denyWith()', function () {
         next();
       }, 3);
     });
-    return withRunningServer(router)
-    .then(function () {
-      return expectRequest('GET', '/foo/bar').toReturnCode(400)
-      .then(function () {
-        assert.deepEqual(middlewareCalls, [1, 2, 3, 4]);
-      });
+    return withRunningServer(router).then(function () {
+      return expectRequest('GET', '/foo/bar')
+        .toReturnCode(400)
+        .then(function () {
+          assert.deepEqual(middlewareCalls, [1, 2, 3, 4]);
+        });
     });
   });
 
@@ -624,53 +558,65 @@ describe('custom denials with Router.denyWith()', function () {
       middleware: (req, res) => res.send(200),
     });
 
-    return withRunningServer(router)
-    .then(function () {
+    return withRunningServer(router).then(function () {
       return expectRequest('GET', '/bar').toReturnCode(500);
     });
   });
 });
 
-
-function expectRequest (method, path) {
+function expectRequest(method, path) {
   const reqPromise = Promise.fromCallback(function (cb) {
-    request({
-      method,
-      json: true,
-      url: `http://localhost:19288${path}`,
-    }, cb);
+    request(
+      {
+        method,
+        json: true,
+        url: `http://localhost:19288${path}`,
+      },
+      cb,
+    );
   });
 
   return {
-    toReturnCode (responseCode) {
-      return reqPromise
-      .then(function (response) {
-        assert.equal(response.statusCode, responseCode, `Expected request to ${path} to return code ${responseCode} but got ${response.statusCode}.`);
+    toReturnCode(responseCode) {
+      return reqPromise.then(function (response) {
+        assert.equal(
+          response.statusCode,
+          responseCode,
+          `Expected request to ${path} to return code ${responseCode} but got ${response.statusCode}.`,
+        );
       });
     },
-    toHaveHeader (name, value) {
-      return reqPromise
-      .then(function (response) {
-        assert.equal(response.headers[name], value, `Expected request to ${path} to respond with header ${name} of value ${value}, but got ${response.headers[name]} instead.`);
+    toHaveHeader(name, value) {
+      return reqPromise.then(function (response) {
+        assert.equal(
+          response.headers[name],
+          value,
+          `Expected request to ${path} to respond with header ${name} of value ${value}, but got ${response.headers[name]} instead.`,
+        );
       });
     },
-    toReturnBody (body) {
-      return reqPromise
-      .then(function (response) {
-        assert.deepEqual(response.body, body, `Expected request to ${path} to return body ${JSON.stringify(body)}, but got ${JSON.stringify(response.body)} instead.`);
+    toReturnBody(body) {
+      return reqPromise.then(function (response) {
+        assert.deepEqual(
+          response.body,
+          body,
+          `Expected request to ${path} to return body ${JSON.stringify(
+            body,
+          )}, but got ${JSON.stringify(response.body)} instead.`,
+        );
       });
     },
   };
 }
 
-function buildRouter () {
+function buildRouter() {
   const router = new Router();
   router.bounceRequests();
   return router;
 }
 
 let sharedServer;
-function withRunningServer (router) {
+function withRunningServer(router) {
   const app = express();
   app.use(router);
   return Promise.fromCallback(function (done) {

@@ -9,14 +9,17 @@ import async from 'async';
 
 const debug = configureDebug('secure-router');
 
+const AUTHORIZE = 'AUTHORIZE';
+const AUTHENTICATE = 'AUTHENTICATE';
+const DENY = 'DENY';
 export default class Router extends BaseRouter {
-  constructor (...args) {
+  constructor(...args) {
     super(...args);
     this.bouncers = [];
     this.pathDefinitions = [];
   }
 
-  static denyWith (params, i) {
+  static denyWith(params, i) {
     let middleware;
 
     if (_.isFunction(params)) {
@@ -34,20 +37,19 @@ export default class Router extends BaseRouter {
     return _.assign({}, Router.DENY, {middleware, i});
   }
 
-  bounceRequests () {
+  bounceRequests() {
     const router = this;
     router.use(function (req, res, next) {
       const parsedUrl = url.parse(req.url);
-      router.resolveCustomSecurity(req, res, parsedUrl.pathname)
-      .then(function (results) {
-        function match (result, expectedValue) {
+      router.resolveCustomSecurity(req, res, parsedUrl.pathname).then(function (results) {
+        function match(result, expectedValue) {
           return _.isObject(result) && result.value === expectedValue;
         }
 
-        function someResultsMatch (expectedValue) {
+        function someResultsMatch(expectedValue) {
           return _.some(results, (result) => match(result, expectedValue));
         }
-        function noResultsMatch (expectedValue) {
+        function noResultsMatch(expectedValue) {
           return _.every(results, (result) => !match(result, expectedValue));
         }
 
@@ -65,7 +67,7 @@ export default class Router extends BaseRouter {
                 callback(err);
               }
             },
-            next
+            next,
           );
           return;
         }
@@ -87,7 +89,7 @@ export default class Router extends BaseRouter {
     return router;
   }
 
-  secureSubpath (params) {
+  secureSubpath(params) {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureSubpath');
 
     let bouncers = params.bouncers;
@@ -95,16 +97,18 @@ export default class Router extends BaseRouter {
     if (_.isFunction(params.bouncer)) bouncers.push(params.bouncer);
 
     const innerRouter = new Router();
-    this.pathDefinitions.push(createPathDefinition({
-      path: params.path,
-      innerRouters: [innerRouter],
-      bouncers,
-    }));
+    this.pathDefinitions.push(
+      createPathDefinition({
+        path: params.path,
+        innerRouters: [innerRouter],
+        bouncers,
+      }),
+    );
     this.use(params.path, innerRouter);
     return innerRouter;
   }
 
-  secureEndpoint (params) {
+  secureEndpoint(params) {
     if (_.isNil(params.path)) throw new Error('Must pass a path to secureEndpoint');
     if (_.isNil(params.method)) throw new Error('Must pass a method to secureEndpoint');
 
@@ -116,19 +120,21 @@ export default class Router extends BaseRouter {
     if (_.isNil(middleware)) throw new Error('Must pass a middlware to secureEndpoint');
     if (_.isFunction(middleware)) middleware = [middleware];
 
-    this.pathDefinitions.push(createPathDefinition({
-      path: params.path,
-      bouncers,
-      methods: [params.method.toUpperCase()],
-    }));
+    this.pathDefinitions.push(
+      createPathDefinition({
+        path: params.path,
+        bouncers,
+        methods: [params.method.toUpperCase()],
+      }),
+    );
 
     /* actually mount the route */
     this[params.method.toLowerCase()](params.path, ...middleware);
     return this;
   }
 
-  use (path, ...innerRouters) {
-    function isSecureRouter (router) {
+  use(path, ...innerRouters) {
+    function isSecureRouter(router) {
       return _.isFunction(router.resolveCustomSecurity);
     }
 
@@ -165,12 +171,12 @@ export default class Router extends BaseRouter {
 
   // Inspired by https://github.com/expressjs/express/issues/2879#issuecomment-180088895
   // eslint-disable-next-line camelcase
-  process_params (layer, called, req) {
-    const path =
-      _.get(req, 'route.path',
-        _.get(req, 'route.regexp.source',
-          _.get(layer, '__mountpath',
-            '')));
+  process_params(layer, called, req) {
+    const path = _.get(
+      req,
+      'route.path',
+      _.get(req, 'route.regexp.source', _.get(layer, '__mountpath', '')),
+    );
 
     if (req.matchedRoutes == null) req.matchedRoutes = [];
     req.__route = (req.__route || '') + path;
@@ -183,17 +189,20 @@ export default class Router extends BaseRouter {
     return BaseRouter.prototype.process_params.apply(this, arguments);
   }
 
-  bouncer (bouncer) {
+  bouncer(bouncer) {
     this.bouncers.push(bouncer);
   }
 
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
-  resolveCustomSecurity (req, res, urlSegment) {
+  resolveCustomSecurity(req, res, urlSegment) {
     return Promise.try(() => {
       const bouncers = [...this.bouncers];
       const innerRouters = [];
 
-      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(urlSegment, req.method);
+      const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(
+        urlSegment,
+        req.method,
+      );
       debug('Found matching path definitions', {pathDefinition, matchedUrlSegment});
       if (_.isObject(pathDefinition)) {
         urlSegment = urlSegment.substr(matchedUrlSegment.length);
@@ -204,18 +213,19 @@ export default class Router extends BaseRouter {
       return Promise.all([
         Promise.map(bouncers, (bouncer) => Promise.resolve(bouncer(req, res))),
         Promise.map(innerRouters, (innerRouter) =>
-          innerRouter.resolveCustomSecurity(req, res, urlSegment)
+          innerRouter.resolveCustomSecurity(req, res, urlSegment),
         ),
-      ])
-      .then(([bouncerResults, innerRouterResults]) => bouncerResults.concat(_.flatten(innerRouterResults)));
+      ]).then(([bouncerResults, innerRouterResults]) =>
+        bouncerResults.concat(_.flatten(innerRouterResults)),
+      );
     });
   }
 
-  getPathDefinitionMatching (urlSegment, method) {
+  getPathDefinitionMatching(urlSegment, method) {
     let matches, hasMethod;
     /* start with most specific path definition */
-    this.pathDefinitions.sort((a, b) =>
-      _.compact(b.path.split('/')).length - _.compact(a.path.split('/')).length
+    this.pathDefinitions.sort(
+      (a, b) => _.compact(b.path.split('/')).length - _.compact(a.path.split('/')).length,
     );
     for (const pathDefinition of this.pathDefinitions) {
       matches = pathDefinition.regexp.exec(urlSegment);
@@ -228,21 +238,17 @@ export default class Router extends BaseRouter {
   }
 }
 
-const AUTHORIZE = 'AUTHORIZE';
-const AUTHENTICATE = 'AUTHENTICATE';
-const DENY = 'DENY';
-
 Router.AUTHORIZE = {value: AUTHORIZE};
 Router.AUTHENTICATE = {value: AUTHENTICATE};
 Router.DENY = {
   value: DENY,
-  middleware (req, res) {
+  middleware(req, res) {
     debug('Default DENY middleware responding with 401');
     res.sendStatus(401);
   },
 };
 
-function createPathDefinition (definition) {
+function createPathDefinition(definition) {
   return _.defaults({}, definition, {
     regexp: pathToRegexp(definition.path, {end: false, sensitive: true, strict: false}),
     innerRouters: [],
