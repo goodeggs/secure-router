@@ -3,9 +3,11 @@ module.exports = {
   parserOptions: {
     project: ['./tsconfig.json'],
   },
-  extends: ['plugin:goodeggs/recommended'],
+  extends: ['plugin:goodeggs/recommended', 'plugin:goodeggs/typescript'],
   env: {
     node: true,
   },
-  rules: {},
+  rules: {
+    'import/no-commonjs': 'off',
+  },
 };
