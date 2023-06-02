@@ -1,4 +1,4 @@
-import BaseRouter, {Path, RouterMethod} from 'router';
+import BaseRouter, {RouterMethod, ErrorHandleFunction, Path} from 'router';
 import Promise from 'bluebird';
 import _ from 'lodash';
 import configureDebug from 'debug';
@@ -6,7 +6,7 @@ import http from 'http';
 import pathToRegexp, {PathRegExp} from 'path-to-regexp';
 import url from 'url';
 import async from 'async';
-import {NextFunction, Request, RequestHandler, Response} from 'express';
+import {Request, RequestHandler, Response} from 'express';
 
 const debug = configureDebug('secure-router');
 
@@ -19,7 +19,14 @@ export type AccessStatus =
   | typeof Router.AUTHENTICATE
   | typeof Router.DENY;
 
-type ErrorHandleFunction = (err: Error, req: Request, res: Response, next: NextFunction) => void;
+export interface SecureRouterRequestHandler extends RequestHandler {
+  __mountpath?: string;
+}
+
+export interface SecureRouterRequest extends Request {
+  matchedRoutes?: string[];
+  __route?: string;
+}
 
 const parseError = (error: unknown): Error => {
   if (error instanceof Error) return error;
@@ -43,9 +50,9 @@ class Router extends BaseRouter {
     >
   >;
   bouncers: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
-  stack: string[] = [];
+  stack: SecureRouterRequestHandler[] = [];
   /* eslint-disable @typescript-eslint/naming-convention */
-  static DENY: {value: string; middleware: (req: Request, res: Response) => void};
+  static DENY: {value: string; middleware: (req: SecureRouterRequest, res: Response) => void};
   static AUTHORIZE: {value: string};
   static AUTHENTICATE: {value: string};
   /* eslint-enable @typescript-eslint/naming-convention */
@@ -74,7 +81,7 @@ class Router extends BaseRouter {
       return _.assign({}, Router.DENY, {middleware, i});
     } else if (_.isObject(params)) {
       debug('Creating denial with params', params);
-      const middleware = (_req: Request, res: Response): void => {
+      const middleware = (_req: SecureRouterRequest, res: Response): void => {
         debug('Responding to request with procedural denyWith middleware');
         res.status(_.get(params, 'statusCode', 401));
         res.send(params.payload);
@@ -86,7 +93,11 @@ class Router extends BaseRouter {
 
   bounceRequests(): Router {
     const router = this;
-    router.use(function (req: Request, res: Response, next: async.ErrorCallback<Error>) {
+    router.use(function (
+      req: SecureRouterRequest,
+      res: Response,
+      next: async.ErrorCallback<Error>,
+    ) {
       const parsedUrl = url.parse(req.url);
       router
         .resolveCustomSecurity(req, res, parsedUrl.pathname as string)
@@ -143,7 +154,7 @@ class Router extends BaseRouter {
 
   secureSubpath(params: {
     path: string;
-    bouncer?: (...args: unknown[]) => AccessStatus | Promise<AccessStatus>;
+    bouncer?: (args: unknown) => AccessStatus | Promise<AccessStatus>;
     bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
   }): Router {
     let {bouncers} = params;
@@ -166,8 +177,8 @@ class Router extends BaseRouter {
     path: string;
     method: string;
     middleware: RequestHandler | RequestHandler[];
-    bouncer?: (...args: unknown[]) => AccessStatus | Promise<AccessStatus>;
-    bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+    bouncer?: (args: unknown) => AccessStatus | Promise<AccessStatus>;
+    bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus> | undefined>;
   }): Router {
     let {bouncers} = params;
     if (_.isNil(bouncers)) bouncers = [];
@@ -231,7 +242,7 @@ class Router extends BaseRouter {
   process_params = (
     layer: {keys: Array<{name: string | number}>},
     _called: unknown,
-    req: {matchedRoutes: string[]; __route: string},
+    req: SecureRouterRequest,
   ): void => {
     const path: string = _.get(
       req,
@@ -260,7 +271,7 @@ class Router extends BaseRouter {
   }
 
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
-  resolveCustomSecurity(req: Request, res: Response, urlSegment: string): Promise<any> {
+  resolveCustomSecurity(req: SecureRouterRequest, res: Response, urlSegment: string): Promise<any> {
     return Promise.try(async () => {
       const bouncers = [...this.bouncers];
       const innerRouters = [];
@@ -305,7 +316,7 @@ class Router extends BaseRouter {
     > | null;
     matchedUrlSegment: string;
   } {
-    let matches, hasMethod: boolean;
+    let matches: RegExpExecArray | null, hasMethod: boolean;
     /* start with most specific path definition */
     this.pathDefinitions.sort(
       (a, b) => _.compact(b.path.split('/')).length - _.compact(a.path.split('/')).length,
@@ -334,7 +345,7 @@ Router.DENY = {
 function createPathDefinition(definition: {
   path: string;
   innerRouters?: Router[];
-  bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+  bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus> | undefined>;
   methods?: string[];
 }): NonNullable<
   {

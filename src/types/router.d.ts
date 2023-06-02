@@ -3,20 +3,25 @@
 // Stolen from https://github.com/pillarjs/router/issues/48#issuecomment-881248412
 declare module 'router' {
   import type {NextFunction, NextHandleFunction} from 'connect';
-  import {Request, Response} from 'express';
   import type {IncomingMessage, ServerResponse} from 'http';
+  import {Request, RequestHandler, Response} from 'express';
 
-  // Obviously, we don't control what other libraries call things.
-  /* eslint-disable @typescript-eslint/naming-convention */
-
-  export type Path = string | RegExp | Array<string | RegExp>;
-
-  export type ErrorHandlerFunction = (
+  export type ErrorHandleFunction = (
     err: Error,
     req: Request,
     res: Response,
     next: NextFunction,
   ) => void;
+
+  interface SecureRouterRequest extends Request {
+    matchedRoutes?: string[];
+    __route: string;
+  }
+
+  // Obviously, we don't control what other libraries call things.
+  /* eslint-disable @typescript-eslint/naming-convention */
+
+  export type Path = string | RegExp | Array<string | RegExp>;
 
   export namespace Router {
     export interface RouteType {
@@ -54,7 +59,7 @@ declare module 'router' {
       process_params: <K extends string | number>(
         layer: {keys: Array<{name: K}>},
         called: Record<K, {match: unknown; value: unknown; error: unknown}>,
-        req: {matchedRoutes: string[]; __route: string},
+        req: SecureRouterRequest,
       ) => void;
     }
 
@@ -63,11 +68,13 @@ declare module 'router' {
         'use' | Method,
         {
           (
-            path: Path,
-            middleware: NextHandleFunction,
-            ...middlewares: NextHandleFunction[]
+            path: Path | RequestHandler | ErrorHandleFunction,
+            ...middleware: Array<NextHandleFunction | RequestHandler | ErrorHandleFunction>
           ): Router;
-          (middleware: NextHandleFunction, ...middlewares: NextHandleFunction[]): Router;
+          (
+            middleware: NextHandleFunction | RequestHandler | ErrorHandleFunction,
+            ...middlewares: Array<NextHandleFunction | RequestHandler | ErrorHandleFunction>
+          ): Router;
         }
       >;
 
