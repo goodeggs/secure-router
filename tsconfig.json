@@ -1,0 +1,12 @@
+{
+  "extends": "@goodeggs/tsconfig/base",
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "module": "commonjs",
+    // Chance is not typed in a way that allows you to import the type for an instance
+    "noUnusedLocals": false
+  },
+  "exclude": ["node_modules/**/*", "build"]
+}

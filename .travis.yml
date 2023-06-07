@@ -3,11 +3,9 @@ dist: trusty
 
 language: node_js
 node_js:
-  - '8'
-  - '6.11.1'
-  - '4.8.4'
+  - '16'
 
 cache:
   yarn: true
   directories:
-    - "/home/travis/.npm"
+    - '/home/travis/.npm'
