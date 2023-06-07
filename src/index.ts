@@ -39,17 +39,26 @@ class Router extends BaseRouter {
       {
         regexp: PathRegExp;
         innerRouters: Router[];
-        bouncers: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+        bouncers: Array<
+          | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+          | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+        >;
         methods: string[];
       } & {
         path: string;
         innerRouters: Router[];
-        bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+        bouncers?: Array<
+          | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+          | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+        >;
         methods?: string[];
       }
     >
   >;
-  bouncers: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+  bouncers: Array<
+    | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+    | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+  >;
   stack: SecureRouterRequestHandler[] = [];
   /* eslint-disable @typescript-eslint/naming-convention */
   static DENY: {value: string; middleware: (req: SecureRouterRequest, res: Response) => void};
@@ -154,8 +163,13 @@ class Router extends BaseRouter {
 
   secureSubpath(params: {
     path: string;
-    bouncer?: (args: unknown) => AccessStatus | Promise<AccessStatus>;
-    bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+    bouncer?:
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>);
+    bouncers?: Array<
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+    >;
   }): Router {
     let {bouncers} = params;
     if (_.isNil(bouncers)) bouncers = [];
@@ -177,8 +191,16 @@ class Router extends BaseRouter {
     path: string;
     method: string;
     middleware: RequestHandler | RequestHandler[];
-    bouncer?: (args: unknown) => AccessStatus | Promise<AccessStatus>;
-    bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus> | undefined>;
+    bouncer?:
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>);
+    bouncers?: Array<
+      | ((
+          req: SecureRouterRequest,
+          res: Response,
+        ) => AccessStatus | Promise<AccessStatus> | undefined)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus> | undefined)
+    >;
   }): Router {
     let {bouncers} = params;
     if (_.isNil(bouncers)) bouncers = [];
@@ -265,7 +287,9 @@ class Router extends BaseRouter {
   bouncer({
     bouncer,
   }: {
-    bouncer: (...args: unknown[]) => AccessStatus | Promise<AccessStatus>;
+    bouncer:
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>);
   }): void {
     this.bouncers.push(bouncer);
   }
@@ -273,8 +297,11 @@ class Router extends BaseRouter {
   /* returns a promise. runs all of the appropriate bouncers configured for this route.  */
   resolveCustomSecurity(req: SecureRouterRequest, res: Response, urlSegment: string): Promise<any> {
     return Promise.try(async () => {
-      const bouncers = [...this.bouncers];
-      const innerRouters = [];
+      const bouncers: Array<
+        | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+        | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+      > = [...this.bouncers];
+      const innerRouters: Router[] = [];
 
       const {pathDefinition, matchedUrlSegment} = this.getPathDefinitionMatching(
         urlSegment,
@@ -305,12 +332,18 @@ class Router extends BaseRouter {
       {
         regexp: PathRegExp;
         innerRouters: Router[];
-        bouncers: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+        bouncers: Array<
+          | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+          | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+        >;
         methods: string[];
       } & {
         path: string;
         innerRouters: Router[];
-        bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+        bouncers?: Array<
+          | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+          | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+        >;
         methods?: string[];
       }
     > | null;
@@ -345,18 +378,30 @@ Router.DENY = {
 function createPathDefinition(definition: {
   path: string;
   innerRouters?: Router[];
-  bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus> | undefined>;
+  bouncers?: Array<
+    | ((
+        req: SecureRouterRequest,
+        res: Response,
+      ) => AccessStatus | Promise<AccessStatus> | undefined)
+    | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus> | undefined)
+  >;
   methods?: string[];
 }): NonNullable<
   {
     regexp: PathRegExp;
     innerRouters: Router[];
-    bouncers: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+    bouncers: Array<
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+    >;
     methods: string[];
   } & {
     path: string;
     innerRouters?: Router[];
-    bouncers?: Array<(...args: unknown[]) => AccessStatus | Promise<AccessStatus>>;
+    bouncers?: Array<
+      | ((req: SecureRouterRequest, res: Response) => AccessStatus | Promise<AccessStatus>)
+      | ((req: SecureRouterRequest) => AccessStatus | Promise<AccessStatus>)
+    >;
     methods?: string[];
   }
 > {

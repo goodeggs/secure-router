@@ -653,7 +653,7 @@ let sharedServer: Server<typeof IncomingMessage, typeof ServerResponse> | null;
 function withRunningServer(router: Router): Promise<unknown> {
   const app = express();
   app.use(router);
-  return Promise.fromCallback(function (done) {
+  return Promise.fromCallback(function (done: Mocha.Done) {
     sharedServer = app.listen(19288, done);
   });
 }
